@@ -1,0 +1,17 @@
+# Preset Dataset Mode Examples
+# Format: dataset,src,tar,dim,lamb,iter
+dataset,src,tar,dim,lamb,iter
+digit,USPS,MNIST,100,0.1,10
+coil,COIL1,COIL2,100,0.1,10
+pie,PIE05,PIE27,100,0.1,10
+pie,PIE05,PIE29,100,0.1,10
+pie,PIE07,PIE27,100,0.1,10
+surf,webcam,dslr,100,1.0,10
+surf,amazon,webcam,100,1.0,10
+surf,dslr,webcam,100,1.0,10
+surf,Caltech10,amazon,100,1.0,10
+
+# Custom Data Mode Examples (uncomment to use)
+# Format: src_file,src_feat,src_label,tar_file,tar_feat,tar_label,dim,lamb,iter
+# src_file,src_feat,src_label,tar_file,tar_feat,tar_label,dim,lamb,iter
+# data/my_source.mat,X,Y,data/my_target.mat,X,Y,100,0.1,10

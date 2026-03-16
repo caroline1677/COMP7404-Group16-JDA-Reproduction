@@ -135,6 +135,8 @@ python jda_comparison.py \
 | `--tsl-iter` | int | 10 | Iterations for TSL specifically |
 | **Output Options** | | | |
 | `--methods` | str | all | Methods: 'all' or comma-separated (nn,pca,tca,gfk,tsl,jda) |
+| `--parallel` | flag | False | Run methods in parallel (multi-threaded) |
+| `--workers` | int | 4 | Number of parallel workers (default: 4) |
 | `--output` | str | None | Save results to CSV file |
 
 ### Examples
@@ -147,6 +149,11 @@ python jda_comparison.py --dataset surf --src webcam --tar dslr --dim 50 --lamb 
 Run only specific methods:
 ```bash
 python jda_comparison.py --dataset coil --src COIL1 --tar COIL2 --methods nn,pca,jda
+```
+
+Run in parallel (recommended for large datasets):
+```bash
+python jda_comparison.py --dataset pie --src PIE1 --tar PIE4 --parallel --workers 4
 ```
 
 Save results to CSV:

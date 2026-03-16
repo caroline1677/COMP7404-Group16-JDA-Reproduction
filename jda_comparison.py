@@ -19,6 +19,7 @@ import sklearn.metrics
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 np.random.seed(42)
 
@@ -570,13 +571,36 @@ def run_comparison(args):
         else:
             method_list = [m.upper() for m in args.methods]
 
-    # Run methods with progress bar
+    # Run methods
     results = {}
 
-    print(f"\nRunning {len(method_list)} methods: {', '.join(method_list)}")
-    for method_name in tqdm(method_list, desc="Methods", unit="method"):
-        acc, runtime = run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter)
-        results[method_name] = (acc, runtime)
+    if args.parallel and len(method_list) > 1:
+        # Parallel execution using ThreadPoolExecutor
+        print(f"\nRunning {len(method_list)} methods in parallel: {', '.join(method_list)}")
+        print(f"Workers: {args.workers}")
+
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            # Submit all tasks
+            future_to_method = {
+                executor.submit(run_single_method, method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter): method_name
+                for method_name in method_list
+            }
+
+            # Collect results with progress bar
+            for future in tqdm(as_completed(future_to_method), total=len(method_list), desc="Methods", unit="method"):
+                method_name = future_to_method[future]
+                try:
+                    acc, runtime = future.result()
+                    results[method_name] = (acc, runtime)
+                except Exception as e:
+                    print(f"Error in {method_name}: {e}")
+                    results[method_name] = (0.0, 0.0)
+    else:
+        # Sequential execution
+        print(f"\nRunning {len(method_list)} methods: {', '.join(method_list)}")
+        for method_name in tqdm(method_list, desc="Methods", unit="method"):
+            acc, runtime = run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter)
+            results[method_name] = (acc, runtime)
 
     # Print results
     print(f"\n{'='*60}")
@@ -676,6 +700,10 @@ Examples:
     # Output options
     parser.add_argument("--methods", type=str, default="all",
                         help="Methods to run: 'all' or comma-separated list (nn,pca,tca,gfk,tsl,jda)")
+    parser.add_argument("--parallel", action="store_true",
+                        help="Run methods in parallel (multi-threaded)")
+    parser.add_argument("--workers", type=int, default=4,
+                        help="Number of parallel workers (default: 4)")
     parser.add_argument("--output", type=str, default=None,
                         help="Output CSV file to append results")
 

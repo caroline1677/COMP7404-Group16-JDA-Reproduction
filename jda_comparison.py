@@ -187,68 +187,116 @@ class TCA:
         return sklearn.metrics.accuracy_score(Yt, clf.predict(Xt_new)) * 100
 
 
+def _orth_complement(P):
+    """Compute orthonormal complement of matrix P (D x d -> D x (D-d))."""
+    D, d = P.shape
+    # Use QR then SVD to get complement
+    Q, _ = np.linalg.qr(P)
+    U, _, _ = np.linalg.svd(Q, full_matrices=True)
+    complement = U[:, d:]
+    return complement
+
+
+def _pca_basis(X, n_components):
+    """Compute PCA basis vectors."""
+    pca = PCA(n_components=n_components)
+    pca.fit(X)
+    return pca.components_.T
+
+
 class GFK:
     """Geodesic Flow Kernel (GFK) for unsupervised domain adaptation.
     Reference: Gong et al., CVPR 2012.
 
-    This implementation uses proper kernel distance metric:
-    D = diag(K_ss) + diag(K_tt) - 2*K_st
+    Uses closed-form GFK matrix (Eq.5-6) + 1-NN as per original paper.
     """
     def __init__(self, dim=100):
         self.dim = dim
-        self.eps = 1e-20
+        self.eps = 1e-12
+
+    def _compute_gfk_matrix(self, Ps, Pt):
+        """Compute closed-form GFK matrix G according to the paper."""
+        D, d = Ps.shape
+        Rs = _orth_complement(Ps)
+
+        U1, cos_theta, Vt = np.linalg.svd(Ps.T @ Pt, full_matrices=False)
+        V = Vt.T
+        cos_theta = np.clip(cos_theta, -1.0, 1.0)
+        theta = np.arccos(cos_theta)
+
+        B = Rs.T @ Pt @ V
+        sin_theta = np.sqrt(np.maximum(1.0 - cos_theta ** 2, 0.0))
+
+        U2 = np.zeros((Rs.shape[1], d), dtype=np.float64)
+        for i in range(d):
+            if sin_theta[i] > self.eps:
+                U2[:, i] = -B[:, i] / sin_theta[i]
+            else:
+                col = -B[:, i]
+                norm = np.linalg.norm(col)
+                if norm > self.eps:
+                    U2[:, i] = col / norm
+                else:
+                    U2[min(i, Rs.shape[1] - 1), i] = 1.0
+
+        U2, _ = np.linalg.qr(U2)
+
+        lam1 = np.zeros(d)
+        lam2 = np.zeros(d)
+        lam3 = np.zeros(d)
+
+        for i in range(d):
+            th = theta[i]
+            if th < self.eps:
+                lam1[i] = 1.0
+                lam2[i] = 0.0
+                lam3[i] = 0.0
+            else:
+                lam1[i] = 0.5 * (1.0 + np.sin(2.0 * th) / (2.0 * th))
+                lam2[i] = 0.5 * ((np.cos(2.0 * th) - 1.0) / (2.0 * th))
+                lam3[i] = 0.5 * (1.0 - np.sin(2.0 * th) / (2.0 * th))
+
+        Lambda1 = np.diag(lam1)
+        Lambda2 = np.diag(lam2)
+        Lambda3 = np.diag(lam3)
+
+        left = np.hstack([Ps @ U1, Rs @ U2])
+        middle = np.block([[Lambda1, Lambda2], [Lambda2, Lambda3]])
+        right = np.vstack([U1.T @ Ps.T, U2.T @ Rs.T])
+
+        G = left @ middle @ right
+        G = np.real((G + G.T) / 2.0)
+        return G
 
     def fit_predict(self, Xs, Ys, Xt, Yt):
+        Xs = Xs.astype(np.float64)
+        Xt = Xt.astype(np.float64)
+        Ys = Ys.ravel()
+        Yt = Yt.ravel()
+
         d = min(self.dim, Xs.shape[1], Xt.shape[1])
 
-        # Step 1: PCA on source and target separately to get subspaces
-        pca_s = PCA(n_components=d)
-        pca_s.fit(Xs)
-        Ps = pca_s.components_.T
+        Ps = _pca_basis(Xs, d)
+        Pt = _pca_basis(Xt, d)
+        Ps, _ = np.linalg.qr(Ps)
+        Pt, _ = np.linalg.qr(Pt)
 
-        pca_t = PCA(n_components=d)
-        pca_t.fit(Xt)
-        Pt = pca_t.components_.T
+        G = self._compute_gfk_matrix(Ps, Pt)
 
-        # Step 2: Compute principal angles between subspaces
-        C = Ps.T @ Pt
-        U, s, Vh = np.linalg.svd(C, full_matrices=False)
-        cos_theta = s
-        sin_theta = np.sqrt(np.maximum(1 - cos_theta**2, 0))
+        GXs = Xs @ G
+        GXt = Xt @ G
 
-        sin2_theta = sin_theta**2
-        sin_2theta = 2 * sin_theta * cos_theta
+        diag_ss = np.sum(GXs * Xs, axis=1)
+        diag_tt = np.sum(GXt * Xt, axis=1)
+        K_ts = Xt @ G @ Xs.T
 
-        # Step 3: Construct the R matrix
-        I = np.eye(d)
-        A = (I + np.diag(sin2_theta)) / 2
-        B = np.diag(sin_2theta) / 2
-        D = (I - np.diag(sin2_theta)) / 2
-        R_blk = np.block([[A, B], [B.T, D]])
+        dist = diag_tt[:, None] + diag_ss[None, :] - 2.0 * K_ts
+        dist = np.maximum(dist, 0.0)
 
-        # Transform basis
-        PsU = Ps @ U
-        PtV = Pt @ Vh.T
+        # 1-NN as per original paper
+        pred = Ys[np.argmin(dist, axis=1)]
 
-        # Project data onto combined subspace
-        z_s = np.hstack([Xs @ PsU, Xs @ PtV])
-        z_t = np.hstack([Xt @ PsU, Xt @ PtV])
-
-        # Compute kernel matrices
-        K_ss = z_s @ R_blk @ z_s.T
-        K_tt = z_t @ R_blk @ z_t.T
-        K_st = z_s @ R_blk @ z_t.T
-
-        # Compute distance matrix using kernel trick
-        diag_ss = np.diag(K_ss).reshape(-1, 1)
-        diag_tt = np.diag(K_tt).reshape(1, -1)
-        D = diag_ss + diag_tt - 2 * K_st
-        D = np.maximum(D, 0)
-
-        # 1-NN based on minimum distance
-        pred = Ys[np.argmin(D, axis=0)]
-
-        return np.mean(pred == Yt) * 100
+        return sklearn.metrics.accuracy_score(Yt, pred) * 100
 
 
 class TSL:
@@ -502,8 +550,11 @@ def run_comparison(args):
         method_list = DEFAULT_METHOD_ORDER
     else:
         # Support comma-separated or space-separated
-        if isinstance(args.methods, str) and ',' in args.methods:
-            method_list = [m.strip().upper() for m in args.methods.split(',')]
+        if isinstance(args.methods, str):
+            if ',' in args.methods:
+                method_list = [m.strip().upper() for m in args.methods.split(',')]
+            else:
+                method_list = [args.methods.upper()]
         else:
             method_list = [m.upper() for m in args.methods]
 

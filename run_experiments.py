@@ -66,7 +66,7 @@ def main():
         print("dataset,src,tar,dim,lamb,iter")
         print("digit,USPS,MNIST,100,0.1,10")
         print("coil,COIL1,COIL2,100,0.1,10")
-        print("pie,PIE05,PIE27,100,0.1,10")
+        print("pie,PIE1,PIE4,100,0.1,10")
         print("surf,webcam,dslr,100,1.0,10")
 
         print("\n=== Custom Mode (for your own data) ===")

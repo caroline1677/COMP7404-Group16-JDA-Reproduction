@@ -3,9 +3,9 @@
 dataset,src,tar,dim,lamb,iter
 digit,USPS,MNIST,100,0.1,10
 coil,COIL1,COIL2,100,0.1,10
-pie,PIE05,PIE27,100,0.1,10
-pie,PIE05,PIE29,100,0.1,10
-pie,PIE07,PIE27,100,0.1,10
+pie,PIE1,PIE4,100,0.1,10
+pie,PIE1,PIE5,100,0.1,10
+pie,PIE2,PIE4,100,0.1,10
 surf,webcam,dslr,100,1.0,10
 surf,amazon,webcam,100,1.0,10
 surf,dslr,webcam,100,1.0,10

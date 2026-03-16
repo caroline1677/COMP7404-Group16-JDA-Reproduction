@@ -76,11 +76,11 @@ jda_project/
 │   │   ├── COIL_1.mat
 │   │   └── COIL_2.mat
 │   ├── pie/
-│   │   ├── PIE05.mat
-│   │   ├── PIE07.mat
-│   │   ├── PIE09.mat
-│   │   ├── PIE27.mat
-│   │   └── PIE29.mat
+│   │   ├── PIE1.mat
+│   │   ├── PIE2.mat
+│   │   ├── PIE3.mat
+│   │   ├── PIE4.mat
+│   │   └── PIE5.mat
 │   └── surf/
 │       ├── amazon_zscore_SURF_L10.mat
 │       ├── Caltech10_zscore_SURF_L10.mat
@@ -97,7 +97,7 @@ Run a single experiment using preset datasets:
 ```bash
 python jda_comparison.py --dataset digit --src USPS --tar MNIST
 python jda_comparison.py --dataset coil --src COIL1 --tar COIL2
-python jda_comparison.py --dataset pie --src PIE05 --tar PIE27
+python jda_comparison.py --dataset pie --src PIE1 --tar PIE4
 python jda_comparison.py --dataset surf --src webcam --tar dslr
 ```
 
@@ -151,7 +151,7 @@ python jda_comparison.py --dataset coil --src COIL1 --tar COIL2 --methods nn,pca
 
 Save results to CSV:
 ```bash
-python jda_comparison.py --dataset pie --src PIE05 --tar PIE27 --output results.csv
+python jda_comparison.py --dataset pie --src PIE1 --tar PIE4 --output results.csv
 ```
 
 ## Batch Processing
@@ -170,7 +170,7 @@ python run_experiments.py experiments_config.csv full_results.csv
 dataset,src,tar,dim,lamb,iter
 digit,USPS,MNIST,100,0.1,10
 coil,COIL1,COIL2,100,0.1,10
-pie,PIE05,PIE27,100,0.1,10
+pie,PIE1,PIE4,100,0.1,10
 surf,webcam,dslr,100,1.0,10
 ```
 

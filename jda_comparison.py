@@ -31,8 +31,8 @@ def load_preset_data(dataset_type, src_name, tar_name, data_dir="data"):
 
     Args:
         dataset_type: 'digit', 'coil', 'pie', or 'surf'
-        src_name: Source domain name (e.g., 'USPS', 'COIL1', 'PIE05', 'webcam')
-        tar_name: Target domain name (e.g., 'MNIST', 'COIL2', 'PIE27', 'dslr')
+        src_name: Source domain name (e.g., 'USPS', 'COIL1', 'PIE1', 'webcam')
+        tar_name: Target domain name (e.g., 'MNIST', 'COIL2', 'PIE4', 'dslr')
         data_dir: Path to data directory
 
     Returns:
@@ -57,9 +57,21 @@ def load_preset_data(dataset_type, src_name, tar_name, data_dir="data"):
         Yt = data["Y_tar"].ravel()
 
     elif dataset_type == "pie":
-        # PIE datasets - src_name is like "PIE05", extract last 4 chars
-        src_suffix = src_name.replace("PIE", "") if "PIE" in src_name else src_name[-4:]
-        tar_suffix = tar_name.replace("PIE", "") if "PIE" in tar_name else tar_name[-4:]
+        # PIE datasets - PIE1, PIE2, PIE3, PIE4, PIE5
+        # Map old names to new: PIE05->1, PIE07->2, PIE09->3, PIE27->4, PIE29->5
+        pie_map = {"05": "1", "07": "2", "09": "3", "27": "4", "29": "5"}
+        if "PIE" in src_name:
+            src_key = src_name.replace("PIE", "")
+            src_suffix = pie_map.get(src_key, src_key)
+        else:
+            src_suffix = src_name[-1] if len(src_name) <= 2 else src_name[-4:]
+
+        if "PIE" in tar_name:
+            tar_key = tar_name.replace("PIE", "")
+            tar_suffix = pie_map.get(tar_key, tar_key)
+        else:
+            tar_suffix = tar_name[-1] if len(tar_name) <= 2 else tar_name[-4:]
+
         src_file = f"{data_dir}/pie/PIE{src_suffix}.mat"
         tar_file = f"{data_dir}/pie/PIE{tar_suffix}.mat"
         src_data = scipy.io.loadmat(src_file)
@@ -615,7 +627,7 @@ Examples:
   python jda_comparison.py --dataset coil --src COIL1 --tar COIL2 --methods nn,pca,jda
 
   # Save results to CSV
-  python jda_comparison.py --dataset pie --src PIE05 --tar PIE27 --output results.csv
+  python jda_comparison.py --dataset pie --src PIE1 --tar PIE4 --output results.csv
         """
     )
 

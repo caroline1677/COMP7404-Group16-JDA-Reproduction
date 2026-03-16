@@ -18,6 +18,7 @@ import scipy.linalg
 import sklearn.metrics
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
+from tqdm import tqdm
 
 np.random.seed(42)
 
@@ -506,10 +507,11 @@ def run_comparison(args):
         else:
             method_list = [m.upper() for m in args.methods]
 
-    # Run methods
+    # Run methods with progress bar
     results = {}
 
-    for method_name in method_list:
+    print(f"\nRunning {len(method_list)} methods: {', '.join(method_list)}")
+    for method_name in tqdm(method_list, desc="Methods", unit="method"):
         acc, runtime = run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter)
         results[method_name] = (acc, runtime)
 

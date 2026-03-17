@@ -59,7 +59,7 @@ np.random.seed(42)
 
 # Parameter search space as per paper
 K_VALUES = list(range(10, 201, 10))  # [10, 20, 30, ..., 200]
-LAMBDA_VALUES = [0.01, 0.1, 1.0, 10.0, 100.0]
+LAMBDA_VALUES = [0.01, 0.1, 1.0]  # Reduced set as per paper
 JDA_ITERS = 10  # Fixed as per paper
 
 
@@ -359,8 +359,14 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
     if target_acc is not None:
         # Find k closest to target accuracy
         best_k, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
-        if verbose:
-            print(f"    Closest to paper: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        diff = abs(best_acc - target_acc)
+        # Check if within ±1.5%
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         # Find maximum accuracy
         best_k, best_acc = max(results, key=lambda x: x[1])
@@ -383,8 +389,13 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
 
     if target_acc is not None:
         best_k, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
-        if verbose:
-            print(f"    Closest to paper: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_k, best_acc = max(results, key=lambda x: x[1])
         if verbose:
@@ -408,8 +419,13 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
-        if verbose:
-            print(f"    Closest to paper: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
@@ -433,8 +449,13 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
-        if verbose:
-            print(f"    Closest to paper: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
@@ -458,8 +479,13 @@ def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
-        if verbose:
-            print(f"    Closest to paper: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:

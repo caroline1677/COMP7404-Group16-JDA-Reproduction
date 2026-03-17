@@ -252,26 +252,28 @@ Example with `--workers 4`:
 - Then TCA: Tests 15*3=45 combinations in parallel (4 at a time)
 - And so on...
 
-### Search Space (as per paper)
+### Search Space
 
 | Method | k Range | λ Values |
 |--------|---------|----------|
 | PCA | 10,20,30,...,200 | - |
 | GFK | 10,20,30,...,200 | - |
-| TCA | 10,20,30,...,200 | 0.01, 0.1, 1, 10, 100 |
-| TSL | 10,20,30,...,200 | 0.01, 0.1, 1, 10, 100 |
-| JDA | 10,20,30,...,200 | 0.01, 0.1, 1, 10, 100 |
+| TCA | 10,20,30,...,200 | 0.01, 0.1, 1.0 |
+| TSL | 10,20,30,...,150 | 0.01, 0.1, 1.0 |
+| JDA | 10,20,30,...,150 | 0.01, 0.1, 1.0 |
+
+**Note**: TSL and JDA use smaller k range (150) because they are slower methods. Time shown is **average per experiment**.
 
 ### Output Example
 
 ```
-Method   k      λ        Ours       Paper      Diff
+Method   k      λ        Ours       Paper      Diff      AvgTime
 ----------------------------------------------------------------------
-PCA      40     -         66.78%   44.95%   +21.83%
-GFK      60     -         65.00%   46.45%   +18.55%
-TCA      50     0.1       58.89%   51.05%    +7.84%
-TSL      70     1.0       59.12%   53.75%    +5.37%
-JDA      100    0.1       72.44%   59.65%   +12.79%
+PCA      40     -         66.78%   44.95%   +21.83%    0.123s
+GFK      60     -         65.00%   46.45%   +18.55%    0.456s
+TCA      50     0.1       58.89%   51.05%    +7.84%    0.789s
+TSL      70     1.0       59.12%   53.75%    +5.37%    1.234s
+JDA      100    0.1       72.44%   59.65%   +12.79%    2.345s
 ```
 
 **NOTE**: Using target domain labels for parameter tuning is only acceptable for research reproduction. In real-world scenarios, this is not feasible as target domain labels are unknown.

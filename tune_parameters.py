@@ -578,37 +578,59 @@ def main():
     paper_key = (args.dataset, args.src, args.tar)
     paper_data = PAPER_RESULTS.get(paper_key, {})
 
-    for method in methods:
-        # Get target accuracy from paper if comparing
-        target_acc = None
-        if args.compare_paper and paper_data:
-            target_acc = paper_data.get(method.upper(), None)
+    # Run methods in parallel if requested
+    if args.parallel and len(methods) > 1:
+        print(f"\nRunning {len(methods)} methods in parallel with {args.workers} workers...")
 
-        if method == "nn":
-            # NN doesn't need tuning, just run once
-            if verbose:
-                print("  Running NN (baseline)...")
-            start = time.time()
-            acc = run_nn(Xs, Ys, Xt, Yt)
-            runtime = time.time() - start
-            results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
-            continue
+        def run_method(method):
+            target_acc = None
+            if args.compare_paper and paper_data:
+                target_acc = paper_data.get(method.upper(), None)
 
-        if method == "pca":
-            params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
-            results["PCA"] = {"params": params, "acc": acc, "runtime": runtime}
-        elif method == "gfk":
-            params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
-            results["GFK"] = {"params": params, "acc": acc, "runtime": runtime}
-        elif method == "tca":
-            params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-            results["TCA"] = {"params": params, "acc": acc, "runtime": runtime}
-        elif method == "tsl":
-            params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-            results["TSL"] = {"params": params, "acc": acc, "runtime": runtime}
-        elif method == "jda":
-            params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-            results["JDA"] = {"params": params, "acc": acc, "runtime": runtime}
+            if method == "nn":
+                start = time.time()
+                acc = run_nn(Xs, Ys, Xt, Yt)
+                runtime = time.time() - start
+                return method.upper(), {"params": {}, "acc": acc, "runtime": runtime}
+            elif method == "pca":
+                params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
+                return "PCA", {"params": params, "acc": acc, "runtime": runtime}
+            elif method == "gfk":
+                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
+                return "GFK", {"params": params, "acc": acc, "runtime": runtime}
+            elif method == "tca":
+                params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
+                return "TCA", {"params": params, "acc": acc, "runtime": runtime}
+            elif method == "tsl":
+                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
+                return "TSL", {"params": params, "acc": acc, "runtime": runtime}
+            elif method == "jda":
+                params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
+                return "JDA", {"params": params, "acc": acc, "runtime": runtime}
+
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = {executor.submit(run_method, m): m for m in methods}
+            for future in as_completed(futures):
+                try:
+                    method_name, data = future.result()
+                    results[method_name] = data
+                except Exception as e:
+                    print(f"Error in {futures[future]}: {e}")
+    else:
+        # Sequential execution
+        for method in methods:
+            target_acc = None
+            if args.compare_paper and paper_data:
+                target_acc = paper_data.get(method.upper(), None)
+
+            if method == "nn":
+                if verbose:
+                    print("  Running NN (baseline)...")
+                start = time.time()
+                acc = run_nn(Xs, Ys, Xt, Yt)
+                runtime = time.time() - start
+                results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
+                continue
 
     total_time = time.time() - start_time
 

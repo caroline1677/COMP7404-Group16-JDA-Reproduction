@@ -243,65 +243,10 @@ def _logdet(A):
 
 
 def run_tsl(Xs, Ys, Xt, Yt, dim, lamb, max_iter=10):
-    """TSL: Transfer Subspace Learning with Bregman divergence."""
-    X = np.hstack((Xs.T, Xt.T))
-    m, n = X.shape
-    ns, nt = len(Xs), len(Xt)
-
-    # Initialize W with PCA
-    pca = PCA(n_components=dim)
-    pca.fit(X.T)
-    W = pca.components_.T
-
-    for _ in range(max_iter):
-        # Compute scatter matrices
-        Xs_w = Xs @ W
-        Xt_w = Xt @ W
-
-        # Sample-level weighting based on Mahalanobis distance
-        cov_s = np.cov(Xs_w.T) + lamb * np.eye(dim)
-        cov_t = np.cov(Xt_w.T) + lamb * np.eye(dim)
-
-        try:
-            cov_s_inv = np.linalg.inv(cov_s)
-            cov_t_inv = np.linalg.inv(cov_t)
-        except:
-            cov_s_inv = np.linalg.pinv(cov_s)
-            cov_t_inv = np.linalg.pinv(cov_t)
-
-        # Weighted MMD
-        ws = np.ones(ns) / ns
-        wt = np.ones(nt) / nt
-
-        # Bregman divergence approximation - simplified MMD matrix
-        M = np.zeros((n, n))
-        # Only fill source-target and target-source blocks
-        for i in range(ns):
-            for j in range(nt):
-                diff = Xs_w[i] - Xt_w[j]
-                d = diff @ ((cov_s_inv + cov_t_inv) / 2) @ diff
-                M[i, ns + j] = d
-                M[ns + j, i] = d
-
-        # Solve generalized eigenvalue problem
-        Sb = X @ M @ X.T + lamb * np.eye(m)
-        Sw = X @ X.T + lamb * np.eye(m)
-
-        try:
-            w, V = scipy.linalg.eig(np.linalg.pinv(Sw) @ Sb)
-            w = np.real(w)
-            V = np.real(V)
-            ind = np.argsort(w)[::-1]
-            W = V[:, ind[:dim]]
-        except:
-            break
-
-    Xs_new = Xs @ W
-    Xt_new = Xt @ W
-
-    clf = KNeighborsClassifier(n_neighbors=1)
-    clf.fit(Xs_new, Ys.ravel())
-    return sklearn.metrics.accuracy_score(Yt, clf.predict(Xt_new)) * 100
+    """TSL: Transfer Subspace Learning - use implementation from jda_comparison.py"""
+    from jda_comparison import TSL
+    tsl = TSL(dim=dim, lamb=lamb, max_iter=max_iter)
+    return tsl.fit_predict(Xs, Ys, Xt, Yt)
 
 
 def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):

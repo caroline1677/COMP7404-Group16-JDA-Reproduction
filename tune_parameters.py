@@ -389,7 +389,8 @@ def tune_pca_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verb
     results = []
 
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        futures = list(executor.map(_pca_task, tasks))
+        # Use tqdm to show progress
+        futures = list(tqdm(executor.map(_pca_task, tasks), total=len(k_values), desc="  PCA", leave=False))
 
     runtime = time.time() - start_time
     results = [(k, acc, runtime/len(k_values)) for k, acc in futures]
@@ -454,7 +455,7 @@ def tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verb
     results = []
 
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        futures = list(executor.map(_gfk_task, tasks))
+        futures = list(tqdm(executor.map(_gfk_task, tasks), total=len(k_values), desc="  GFK", leave=False))
 
     runtime = time.time() - start_time
     results = [(k, acc, runtime/len(k_values)) for k, acc in futures]
@@ -524,7 +525,7 @@ def tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
     results = []
 
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(_tca_task, task_args))
+        results = list(tqdm(executor.map(_tca_task, task_args), total=total, desc="  TCA", leave=False))
 
     runtime = time.time() - start_time
 
@@ -596,7 +597,7 @@ def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
     results = []
 
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(_tsl_task, task_args))
+        results = list(tqdm(executor.map(_tsl_task, task_args), total=total, desc="  TSL", leave=False))
 
     runtime = time.time() - start_time
 
@@ -668,7 +669,7 @@ def tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
     results = []
 
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(_jda_task, task_args))
+        results = list(tqdm(executor.map(_jda_task, task_args), total=total, desc="  JDA", leave=False))
 
     runtime = time.time() - start_time
 

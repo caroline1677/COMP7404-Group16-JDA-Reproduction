@@ -368,7 +368,7 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
     if verbose:
         print(f"  Tuning PCA: {len(k_values)} values...")
 
-    for k in k_values:
+    for k in tqdm(k_values, desc="PCA", leave=False):
         acc = run_pca(Xs, Ys, Xt, Yt, k)
         results.append((k, acc))
 
@@ -399,7 +399,7 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
     if verbose:
         print(f"  Tuning GFK: {len(k_values)} values...")
 
-    for k in k_values:
+    for k in tqdm(k_values, desc="GFK", leave=False):
         acc = run_gfk(Xs, Ys, Xt, Yt, k)
         results.append((k, acc))
 
@@ -426,10 +426,10 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
     total = len(k_values) * len(lamb_values)
 
     if verbose:
-        print(f"  Tuning TCA: {len(k_values)} x {len(lamb_values)} = {total} combinations...")
+        print(f"  Tuning TCA: {total} combinations...")
 
     for k in k_values:
-        for lamb in lamb_values:
+        for lamb in tqdm(lamb_values, desc=f"TCA(k={k})", leave=False):
             acc = run_tca(Xs, Ys, Xt, Yt, k, lamb)
             results.append(({"k": k, "lamb": lamb}, acc))
 
@@ -459,7 +459,7 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
         print(f"  Tuning TSL: {len(k_values)} x {len(lamb_values)} = {total} combinations...")
 
     for k in k_values:
-        for lamb in lamb_values:
+        for lamb in tqdm(lamb_values, desc=f"TSL(k={k})", leave=False):
             acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
             results.append(({"k": k, "lamb": lamb}, acc))
 
@@ -489,7 +489,7 @@ def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
         print(f"  Tuning JDA: {len(k_values)} x {len(lamb_values)} = {total} combinations...")
 
     for k in k_values:
-        for lamb in lamb_values:
+        for lamb in tqdm(lamb_values, desc=f"JDA(k={k})", leave=False):
             acc = run_jda(Xs, Ys, Xt, Yt, k, lamb, T=JDA_ITERS)
             results.append(({"k": k, "lamb": lamb}, acc))
 

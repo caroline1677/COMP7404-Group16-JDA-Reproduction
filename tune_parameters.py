@@ -302,76 +302,130 @@ def run_tsl(Xs, Ys, Xt, Yt, dim, lamb, max_iter=10):
 
 
 def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):
-    """JDA: Joint Distribution Adaptation."""
+    """JDA: Joint Distribution Adaptation (fixed implementation)."""
     X = np.hstack((Xs.T, Xt.T))
     m, n = X.shape
     ns, nt = len(Xs), len(Xt)
 
-    # Initialize with PCA
-    pca = PCA(n_components=dim)
-    pca.fit(X.T)
-    A = pca.components_.T
+    # MMD for marginal distribution
+    e = np.vstack((1/ns * np.ones((ns, 1)), -1/nt * np.ones((nt, 1))))
+    M0 = e * e.T
+
+    C = len(np.unique(Ys))
+    H = np.eye(n) - 1/n * np.ones((n, n))
+
+    Y_tar_pseudo = None
+    A = None
 
     for t in range(T):
-        # Predict target labels
-        Xt_A = Xt @ A
-        Xs_A = Xs @ A
-        clf = KNeighborsClassifier(n_neighbors=1)
-        clf.fit(Xs_A, Ys)
-        Yt_pred = clf.predict(Xt_A)
+        N = np.zeros((n, n))
 
-        # Compute MMD for marginal distribution
-        e = np.vstack((1/ns * np.ones((ns, 1)), -1/nt * np.ones((nt, 1))))
-        Mm = e * e.T
+        # Conditional distribution adaptation
+        if Y_tar_pseudo is not None and len(Y_tar_pseudo) == nt:
+            for c in range(1, C + 1):
+                e_c = np.zeros((n, 1))
 
-        # Compute MMD for conditional distribution
-        Mc = np.zeros((n, n))
-        for c in np.unique(Ys):
-            Ys_c = Ys == c
-            Yt_c = Yt_pred == c
-            ns_c = np.sum(Ys_c)
-            nt_c = np.sum(Yt_c)
-            if ns_c > 0 and nt_c > 0:
-                ec = np.vstack((1/ns_c * np.ones((ns_c, 1)), -1/nt_c * np.ones((nt_c, 1))))
-                Mc_c = ec * ec.T
-                Mc += Mc_c
+                idx_s = np.where(Ys == c)[0]
+                if len(idx_s) > 0:
+                    e_c[idx_s] = 1.0 / len(idx_s)
 
-        M = Mm + Mc
+                idx_t = np.where(Y_tar_pseudo == c)[0]
+                if len(idx_t) > 0:
+                    e_c[idx_t + ns] = -1.0 / len(idx_t)
 
-        # Solve generalized eigenvalue problem
-        H = np.eye(n) - 1/n * np.ones((n, n))
-        A = np.linalg.multi_dot([X, M, X.T, A]) + lamb * np.eye(m)
-        B = np.linalg.multi_dot([X, H, X.T, A]) + 1e-6 * np.eye(m)
+                if np.sum(np.abs(e_c)) > 0:
+                    N = N + np.dot(e_c, e_c.T)
 
-        A = (A + A.T) / 2
-        B = (B + B.T) / 2
+        M = M0 + N
+
+        K = X
+        if A is None:
+            # Initialize with PCA on first iteration
+            pca = PCA(n_components=dim)
+            pca.fit(X.T)
+            A = pca.components_.T
+
+        a = np.linalg.multi_dot([K, M, K.T]) + lamb * np.eye(m)
+        b = np.linalg.multi_dot([K, H, K.T]) + 1e-6 * np.eye(m)
+
+        a = (a + a.T) / 2
+        b = (b + b.T) / 2
 
         try:
-            w, V = scipy.linalg.eig(np.linalg.pinv(B) @ A)
+            w, V = scipy.linalg.eig(a, b)
             w = np.real(w)
             V = np.real(V)
-            ind = np.argsort(w)[::-1]
+            ind = np.argsort(w)
             A = V[:, ind[:dim]]
+            Z = A.T @ K
+            Z = np.real(Z)
+            Z /= np.linalg.norm(Z, axis=0) + 1e-12
+            Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
+
+            clf = KNeighborsClassifier(n_neighbors=1)
+            clf.fit(Xs_new, Ys.ravel())
+            Y_tar_pseudo = clf.predict(Xt_new)
         except:
             break
 
-    Xs_new = Xs @ A
-    Xt_new = Xt @ A
+    # Final prediction with last A
+    if A is not None:
+        Z = A.T @ X
+        Z = np.real(Z)
+        Z /= np.linalg.norm(Z, axis=0) + 1e-12
+        Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
 
-    clf = KNeighborsClassifier(n_neighbors=1)
-    clf.fit(Xs_new, Ys)
-    return sklearn.metrics.accuracy_score(Yt, clf.predict(Xt_new)) * 100
+        clf = KNeighborsClassifier(n_neighbors=1)
+        clf.fit(Xs_new, Ys.ravel())
+        return sklearn.metrics.accuracy_score(Yt, clf.predict(Xt_new)) * 100
+
+    return 0.0
 
 
-# ============== Grid Search ==============
-def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
-    """Grid search for PCA.
+# ============== Grid Search with Parallel Execution ==============
+def tune_pca_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verbose=True):
+    """Grid search for PCA with parallel execution."""
+    results = []
+    tasks = [(k,) for k in k_values]
 
-    Args:
-        target_acc: If provided, find parameters closest to this accuracy (for paper reproduction)
-                   If None, find parameters with maximum accuracy
-    """
-    results = []  # Store all (k, acc, time) tuples
+    if verbose:
+        print(f"  Tuning PCA: {len(k_values)} values with {workers} workers...")
+
+    def run_task(task):
+        k = task[0]
+        start = time.time()
+        acc = run_pca(Xs, Ys, Xt, Yt, k)
+        runtime = time.time() - start
+        return (k, acc, runtime)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = list(executor.map(run_task, tasks))
+
+    results = list(futures)
+
+    if target_acc is not None:
+        best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+    else:
+        best_k, best_acc, best_time = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
+
+    return {"k": best_k}, best_acc, best_time
+
+
+def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True):
+    """Grid search for PCA (sequential or parallel based on workers)."""
+    if workers > 1:
+        return tune_pca_parallel(Xs, Ys, Xt, Yt, k_values, target_acc, workers, verbose)
+
+    results = []
 
     if verbose:
         print(f"  Tuning PCA: {len(k_values)} values...")
@@ -383,18 +437,15 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
         results.append((k, acc, runtime))
 
     if target_acc is not None:
-        # Find k closest to target accuracy
         best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
-        # Check if within ±1.5%
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
-        # Find maximum accuracy
         best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
             print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
@@ -402,8 +453,44 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
     return {"k": best_k}, best_acc, best_time
 
 
-def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
-    """Grid search for GFK."""
+def tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verbose=True):
+    """Grid search for GFK with parallel execution."""
+    results = []
+
+    if verbose:
+        print(f"  Tuning GFK: {len(k_values)} values with {workers} workers...")
+
+    def run_task(k):
+        start = time.time()
+        acc = run_gfk(Xs, Ys, Xt, Yt, k)
+        runtime = time.time() - start
+        return (k, acc, runtime)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(run_task, k_values))
+
+    if target_acc is not None:
+        best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+    else:
+        best_k, best_acc, best_time = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
+
+    return {"k": best_k}, best_acc, best_time
+
+
+def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True):
+    """Grid search for GFK (sequential or parallel based on workers)."""
+    if workers > 1:
+        return tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc, workers, verbose)
+
     results = []
 
     if verbose:
@@ -420,10 +507,10 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
@@ -432,8 +519,47 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
     return {"k": best_k}, best_acc, best_time
 
 
-def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
-    """Grid search for TCA."""
+def tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
+    """Grid search for TCA with parallel execution."""
+    start_time = time.time()
+    tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
+    total = len(tasks)
+
+    if verbose:
+        print(f"  Tuning TCA: {total} combinations with {workers} workers...")
+
+    def run_task(task):
+        k, lamb = task
+        acc = run_tca(Xs, Ys, Xt, Yt, k, lamb)
+        return ({"k": k, "lamb": lamb}, acc)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(run_task, tasks))
+
+    runtime = time.time() - start_time
+
+    if target_acc is not None:
+        best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+    else:
+        best_params, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+
+    return best_params, best_acc, runtime
+
+
+def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, verbose=True):
+    """Grid search for TCA (sequential or parallel based on workers)."""
+    if workers > 1:
+        return tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc, workers, verbose)
+
     start_time = time.time()
     results = []
     total = len(k_values) * len(lamb_values)
@@ -453,10 +579,10 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
@@ -465,8 +591,47 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
     return best_params, best_acc, runtime
 
 
-def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
-    """Grid search for TSL."""
+def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
+    """Grid search for TSL with parallel execution."""
+    start_time = time.time()
+    tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
+    total = len(tasks)
+
+    if verbose:
+        print(f"  Tuning TSL: {total} combinations with {workers} workers...")
+
+    def run_task(task):
+        k, lamb = task
+        acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
+        return ({"k": k, "lamb": lamb}, acc)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(run_task, tasks))
+
+    runtime = time.time() - start_time
+
+    if target_acc is not None:
+        best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+    else:
+        best_params, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+
+    return best_params, best_acc, runtime
+
+
+def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, verbose=True):
+    """Grid search for TSL (sequential or parallel based on workers)."""
+    if workers > 1:
+        return tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc, workers, verbose)
+
     start_time = time.time()
     results = []
     total = len(k_values) * len(lamb_values)
@@ -486,10 +651,10 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
@@ -498,8 +663,47 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
     return best_params, best_acc, runtime
 
 
-def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
-    """Grid search for JDA."""
+def tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
+    """Grid search for JDA with parallel execution."""
+    start_time = time.time()
+    tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
+    total = len(tasks)
+
+    if verbose:
+        print(f"  Tuning JDA: {total} combinations with {workers} workers...")
+
+    def run_task(task):
+        k, lamb = task
+        acc = run_jda(Xs, Ys, Xt, Yt, k, lamb, T=JDA_ITERS)
+        return ({"k": k, "lamb": lamb}, acc)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(run_task, tasks))
+
+    runtime = time.time() - start_time
+
+    if target_acc is not None:
+        best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        diff = abs(best_acc - target_acc)
+        if diff <= 1.5:
+            if verbose:
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+        else:
+            if verbose:
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+    else:
+        best_params, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+
+    return best_params, best_acc, runtime
+
+
+def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, verbose=True):
+    """Grid search for JDA (sequential or parallel based on workers)."""
+    if workers > 1:
+        return tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc, workers, verbose)
+
     start_time = time.time()
     results = []
     total = len(k_values) * len(lamb_values)
@@ -519,18 +723,16 @@ def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
             print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
 
     return best_params, best_acc, runtime
-
-    return best_params, best_acc
 
 
 # ============== Main ==============
@@ -578,59 +780,56 @@ def main():
     paper_key = (args.dataset, args.src, args.tar)
     paper_data = PAPER_RESULTS.get(paper_key, {})
 
-    # Run methods in parallel if requested
-    if args.parallel and len(methods) > 1:
-        print(f"\nRunning {len(methods)} methods in parallel with {args.workers} workers...")
+    # Determine number of workers for internal parallelization
+    # When parallel=True, use all workers for parameter search within each method
+    # Methods run sequentially to avoid mixed output
+    use_workers = args.workers if args.parallel else 1
 
-        def run_method(method):
-            target_acc = None
-            if args.compare_paper and paper_data:
-                target_acc = paper_data.get(method.upper(), None)
+    # Run methods sequentially (to avoid mixed output)
+    # Each method's internal parameter search uses parallelization when workers > 1
+    for method in methods:
+        target_acc = None
+        if args.compare_paper and paper_data:
+            target_acc = paper_data.get(method.upper(), None)
 
-            if method == "nn":
-                start = time.time()
-                acc = run_nn(Xs, Ys, Xt, Yt)
-                runtime = time.time() - start
-                return method.upper(), {"params": {}, "acc": acc, "runtime": runtime}
-            elif method == "pca":
-                params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
-                return "PCA", {"params": params, "acc": acc, "runtime": runtime}
+        if method == "nn":
+            if verbose:
+                print(f"\n  Running NN (baseline)...")
+            start = time.time()
+            acc = run_nn(Xs, Ys, Xt, Yt)
+            runtime = time.time() - start
+            results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
+            if verbose:
+                print(f"    NN: {acc:.2f}%, Time={runtime:.1f}s")
+            continue
+
+        if verbose:
+            if use_workers > 1:
+                print(f"\n  Tuning {method.upper()} with {use_workers} workers (parallel parameter search)...")
+            else:
+                print(f"\n  Tuning {method.upper()} (sequential)...")
+
+        try:
+            if method == "pca":
+                params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc, workers=use_workers)
+                results["PCA"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "gfk":
-                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
-                return "GFK", {"params": params, "acc": acc, "runtime": runtime}
+                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc, workers=use_workers)
+                results["GFK"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "tca":
-                params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-                return "TCA", {"params": params, "acc": acc, "runtime": runtime}
+                params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc, workers=use_workers)
+                results["TCA"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "tsl":
-                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-                return "TSL", {"params": params, "acc": acc, "runtime": runtime}
+                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc, workers=use_workers)
+                results["TSL"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "jda":
-                params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-                return "JDA", {"params": params, "acc": acc, "runtime": runtime}
-
-        with ThreadPoolExecutor(max_workers=args.workers) as executor:
-            futures = {executor.submit(run_method, m): m for m in methods}
-            for future in as_completed(futures):
-                try:
-                    method_name, data = future.result()
-                    results[method_name] = data
-                except Exception as e:
-                    print(f"Error in {futures[future]}: {e}")
-    else:
-        # Sequential execution
-        for method in methods:
-            target_acc = None
-            if args.compare_paper and paper_data:
-                target_acc = paper_data.get(method.upper(), None)
-
-            if method == "nn":
-                if verbose:
-                    print("  Running NN (baseline)...")
-                start = time.time()
-                acc = run_nn(Xs, Ys, Xt, Yt)
-                runtime = time.time() - start
-                results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
-                continue
+                params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc, workers=use_workers)
+                results["JDA"] = {"params": params, "acc": acc, "runtime": runtime}
+        except Exception as e:
+            print(f"Error in {method}: {e}")
+            import traceback
+            traceback.print_exc()
+            results[method.upper()] = {"params": {}, "acc": 0, "runtime": 0, "error": str(e)}
 
     total_time = time.time() - start_time
 
@@ -647,7 +846,7 @@ def main():
     paper_data = PAPER_RESULTS.get(paper_key, {})
 
     if args.compare_paper and paper_data:
-        print(f"{'Method':<8} {'k':<6} {'λ':<8} {'Ours':<12} {'Paper':<10} {'Diff':<10} {'Time':<10}")
+        print(f"{'Method':<8} {'k':<6} {'lamb':<8} {'Ours':<12} {'Paper':<10} {'Diff':<10} {'Time':<10}")
         print("-"*76)
 
         for method, data in results.items():
@@ -663,7 +862,7 @@ def main():
             else:
                 print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>8.2f}% {'N/A':<10} {'':>6} {runtime:>8.1f}s")
     else:
-        print(f"{'Method':<8} {'Best k':<10} {'Best λ':<10} {'Accuracy':<12} {'Time':<10}")
+        print(f"{'Method':<8} {'Best k':<10} {'Best lamb':<10} {'Accuracy':<12} {'Time':<10}")
         print("-"*60)
         for method, data in results.items():
             k = data["params"].get("k", "-")

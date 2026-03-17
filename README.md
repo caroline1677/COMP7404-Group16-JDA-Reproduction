@@ -223,18 +223,34 @@ USPS -> MNIST,64.44,0.123,65.06,0.234,31.89,0.456,58.11,0.789,58.94,1.234,72.44,
 Perform grid search to find optimal hyperparameters for each method:
 
 ```bash
-# Tune all methods
+# Tune all methods (sequential)
 python tune_parameters.py --dataset digit --src USPS --tar MNIST
 
 # Tune specific methods
 python tune_parameters.py --dataset digit --src USPS --tar MNIST --methods pca,gfk,tca
 
-# Compare with original paper results
+# Compare with original paper results (find parameters closest to paper accuracy)
 python tune_parameters.py --dataset digit --src USPS --tar MNIST --compare-paper
 
-# Run with parallel (faster for large parameter search)
+# Run with parallel parameter search (faster for large parameter grid)
+# Methods run sequentially (one at a time) to avoid mixed output
+# Internal parameter search is parallelized using multiple workers
 python tune_parameters.py --dataset digit --src USPS --tar MNIST --parallel --workers 4
+
+# PIE dataset with 8 workers
+python tune_parameters.py --dataset pie --src PIE2 --tar PIE5 --parallel --workers 8
 ```
+
+### How Parallel Execution Works
+
+- **Sequential (default)**: Each method runs one after another. Inside each method, parameters are tested one by one.
+- **Parallel (`--parallel --workers N`)**: Each method still runs one after another (to keep output clean), but inside each method, the parameter grid search is parallelized using N threads.
+
+Example with `--workers 4`:
+- PCA: Tests k=10,20,30,...,150 in parallel (4 at a time)
+- Then GFK: Tests k=10,20,30,...,150 in parallel (4 at a time)
+- Then TCA: Tests 15*3=45 combinations in parallel (4 at a time)
+- And so on...
 
 ### Search Space (as per paper)
 

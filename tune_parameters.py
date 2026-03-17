@@ -215,7 +215,10 @@ def run_tca(Xs, Ys, Xt, Yt, dim, lamb):
     a = (a + a.T) / 2
     b = (b + b.T) / 2
 
-    w, V = scipy.linalg.eig(a, b)
+    try:
+        w, V = scipy.linalg.eig(np.linalg.pinv(b) @ a)
+    except:
+        w, V = scipy.linalg.eig(a, b)
     w = np.real(w)
     V = np.real(V)
     ind = np.argsort(w)
@@ -352,21 +355,21 @@ def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):
         b = (b + b.T) / 2
 
         try:
-            w, V = scipy.linalg.eig(a, b)
-            w = np.real(w)
-            V = np.real(V)
-            ind = np.argsort(w)
-            A = V[:, ind[:dim]]
-            Z = A.T @ K
-            Z = np.real(Z)
-            Z /= np.linalg.norm(Z, axis=0) + 1e-12
-            Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
-
-            clf = KNeighborsClassifier(n_neighbors=1)
-            clf.fit(Xs_new, Ys.ravel())
-            Y_tar_pseudo = clf.predict(Xt_new)
+            w, V = scipy.linalg.eig(np.linalg.pinv(b) @ a)
         except:
-            break
+            w, V = scipy.linalg.eig(a, b)
+        w = np.real(w)
+        V = np.real(V)
+        ind = np.argsort(w)
+        A = V[:, ind[:dim]]
+        Z = A.T @ K
+        Z = np.real(Z)
+        Z /= np.linalg.norm(Z, axis=0) + 1e-12
+        Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
+
+        clf = KNeighborsClassifier(n_neighbors=1)
+        clf.fit(Xs_new, Ys.ravel())
+        Y_tar_pseudo = clf.predict(Xt_new)
 
     # Final prediction with last A
     if A is not None:

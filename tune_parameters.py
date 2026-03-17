@@ -340,45 +340,62 @@ def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):
 
 
 # ============== Grid Search ==============
-def tune_pca(Xs, Ys, Xt, Yt, k_values, verbose=True):
-    """Grid search for PCA."""
-    best_k, best_acc = None, 0
+def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
+    """Grid search for PCA.
+
+    Args:
+        target_acc: If provided, find parameters closest to this accuracy (for paper reproduction)
+                   If None, find parameters with maximum accuracy
+    """
+    results = []  # Store all (k, acc) pairs
 
     if verbose:
         print(f"  Tuning PCA: {len(k_values)} values...")
 
     for k in k_values:
         acc = run_pca(Xs, Ys, Xt, Yt, k)
-        if acc > best_acc:
-            best_acc = acc
-            best_k = k
+        results.append((k, acc))
 
-    if verbose:
-        print(f"    Best: k={best_k}, Acc={best_acc:.2f}%")
+    if target_acc is not None:
+        # Find k closest to target accuracy
+        best_k, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        if verbose:
+            print(f"    Closest to paper: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+    else:
+        # Find maximum accuracy
+        best_k, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%")
+
     return {"k": best_k}, best_acc
 
 
-def tune_gfk(Xs, Ys, Xt, Yt, k_values, verbose=True):
+def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
     """Grid search for GFK."""
-    best_k, best_acc = None, 0
+    results = []
 
     if verbose:
         print(f"  Tuning GFK: {len(k_values)} values...")
 
     for k in k_values:
         acc = run_gfk(Xs, Ys, Xt, Yt, k)
-        if acc > best_acc:
-            best_acc = acc
-            best_k = k
+        results.append((k, acc))
 
-    if verbose:
-        print(f"    Best: k={best_k}, Acc={best_acc:.2f}%")
+    if target_acc is not None:
+        best_k, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        if verbose:
+            print(f"    Closest to paper: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+    else:
+        best_k, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%")
+
     return {"k": best_k}, best_acc
 
 
-def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, verbose=True):
+def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
     """Grid search for TCA."""
-    best_params, best_acc = None, 0
+    results = []
     total = len(k_values) * len(lamb_values)
 
     if verbose:
@@ -387,18 +404,23 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, verbose=True):
     for k in k_values:
         for lamb in lamb_values:
             acc = run_tca(Xs, Ys, Xt, Yt, k, lamb)
-            if acc > best_acc:
-                best_acc = acc
-                best_params = {"k": k, "lamb": lamb}
+            results.append(({"k": k, "lamb": lamb}, acc))
 
-    if verbose:
-        print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+    if target_acc is not None:
+        best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        if verbose:
+            print(f"    Closest to paper: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+    else:
+        best_params, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+
     return best_params, best_acc
 
 
-def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, verbose=True):
+def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
     """Grid search for TSL."""
-    best_params, best_acc = None, 0
+    results = []
     total = len(k_values) * len(lamb_values)
 
     if verbose:
@@ -407,18 +429,23 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, verbose=True):
     for k in k_values:
         for lamb in lamb_values:
             acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
-            if acc > best_acc:
-                best_acc = acc
-                best_params = {"k": k, "lamb": lamb}
+            results.append(({"k": k, "lamb": lamb}, acc))
 
-    if verbose:
-        print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+    if target_acc is not None:
+        best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        if verbose:
+            print(f"    Closest to paper: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+    else:
+        best_params, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+
     return best_params, best_acc
 
 
-def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, verbose=True):
+def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
     """Grid search for JDA."""
-    best_params, best_acc = None, 0
+    results = []
     total = len(k_values) * len(lamb_values)
 
     if verbose:
@@ -427,12 +454,17 @@ def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, verbose=True):
     for k in k_values:
         for lamb in lamb_values:
             acc = run_jda(Xs, Ys, Xt, Yt, k, lamb, T=JDA_ITERS)
-            if acc > best_acc:
-                best_acc = acc
-                best_params = {"k": k, "lamb": lamb}
+            results.append(({"k": k, "lamb": lamb}, acc))
 
-    if verbose:
-        print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+    if target_acc is not None:
+        best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        if verbose:
+            print(f"    Closest to paper: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+    else:
+        best_params, best_acc = max(results, key=lambda x: x[1])
+        if verbose:
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+
     return best_params, best_acc
 
 
@@ -475,28 +507,40 @@ def main():
     results = {}
     start_time = time.time()
 
+    # Get paper target accuracies if comparing
+    paper_key = (args.dataset, args.src, args.tar)
+    paper_data = PAPER_RESULTS.get(paper_key, {})
+
     for method in methods:
+        # Get target accuracy from paper if comparing
+        target_acc = None
+        if args.compare_paper and paper_data:
+            target_acc = paper_data.get(method.upper(), None)
+
         if method == "pca":
-            params, acc = tune_pca(Xs, Ys, Xt, Yt, K_VALUES)
+            params, acc = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
             results["PCA"] = {"params": params, "acc": acc}
         elif method == "gfk":
-            params, acc = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES)
+            params, acc = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
             results["GFK"] = {"params": params, "acc": acc}
         elif method == "tca":
-            params, acc = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values)
+            params, acc = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
             results["TCA"] = {"params": params, "acc": acc}
         elif method == "tsl":
-            params, acc = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values)
+            params, acc = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
             results["TSL"] = {"params": params, "acc": acc}
         elif method == "jda":
-            params, acc = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values)
+            params, acc = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
             results["JDA"] = {"params": params, "acc": acc}
 
     total_time = time.time() - start_time
 
     # Print results
     print("\n" + "="*60)
-    print("Tuning Results (Best Parameters for Maximum Accuracy)")
+    if args.compare_paper and paper_data:
+        print("Tuning Results (Finding Parameters Closest to Paper)")
+    else:
+        print("Tuning Results (Finding Best Parameters for Maximum Accuracy)")
     print("="*60)
 
     # Get paper results for comparison

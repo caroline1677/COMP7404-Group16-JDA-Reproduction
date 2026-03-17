@@ -562,7 +562,12 @@ def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
 
     def run_task(task):
         k, lamb = task
-        acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
+        try:
+            acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
+            if np.isnan(acc):
+                acc = 0.0  # Handle NaN results
+        except Exception as e:
+            acc = 0.0  # Handle errors gracefully
         return ({"k": k, "lamb": lamb}, acc)
 
     results = []

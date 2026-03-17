@@ -408,7 +408,10 @@ class TSL:
 
         Z = A.T @ X
         Z = np.real(Z)
-        Z /= np.linalg.norm(Z, axis=0)
+        # Handle NaN/Inf values
+        norms = np.linalg.norm(Z, axis=0)
+        norms[norms == 0] = 1  # Avoid division by zero
+        Z /= norms
 
         Xs_new = Z[:, :ns].T
         Xt_new = Z[:, ns:].T

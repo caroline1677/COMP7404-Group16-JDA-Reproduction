@@ -487,7 +487,7 @@ class JDA:
         return sklearn.metrics.accuracy_score(Yt, Y_tar_pseudo) * 100
 
 
-def run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter):
+def run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter, method_params=None):
     """Run a single method and return accuracy and runtime.
 
     Args:
@@ -498,24 +498,49 @@ def run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter
         lamb: Regularization parameter
         jda_iter: Number of iterations for JDA
         tsl_iter: Number of iterations for TSL
+        method_params: Dict with method-specific parameters
 
     Returns:
         accuracy, runtime (seconds)
     """
+    # Get method-specific parameters or use defaults
+    if method_params is None:
+        method_params = {}
+
+    # Determine effective parameters for this method
+    if method_name == "PCA":
+        eff_dim = method_params.get("pca_dim", dim)
+        eff_lamb = lamb
+    elif method_name == "GFK":
+        eff_dim = method_params.get("gfk_dim", dim)
+        eff_lamb = lamb
+    elif method_name == "TCA":
+        eff_dim = method_params.get("tca_dim", dim)
+        eff_lamb = method_params.get("tca_lamb", lamb)
+    elif method_name == "TSL":
+        eff_dim = method_params.get("tsl_dim", dim)
+        eff_lamb = method_params.get("tsl_lamb", lamb)
+    elif method_name == "JDA":
+        eff_dim = method_params.get("jda_dim", dim)
+        eff_lamb = method_params.get("jda_lamb", lamb)
+    else:
+        eff_dim = dim
+        eff_lamb = lamb
+
     start_time = time.time()
 
     if method_name == "NN":
         acc = method_nn(Xs, Ys, Xt, Yt)
     elif method_name == "PCA":
-        acc = method_pca(Xs, Ys, Xt, Yt, dim)
+        acc = method_pca(Xs, Ys, Xt, Yt, eff_dim)
     elif method_name == "TCA":
-        acc = TCA(dim, lamb).fit_predict(Xs, Ys, Xt, Yt)
+        acc = TCA(eff_dim, eff_lamb).fit_predict(Xs, Ys, Xt, Yt)
     elif method_name == "GFK":
-        acc = GFK(dim).fit_predict(Xs, Ys, Xt, Yt)
+        acc = GFK(eff_dim).fit_predict(Xs, Ys, Xt, Yt)
     elif method_name == "TSL":
-        acc = TSL(dim, lamb, tsl_iter).fit_predict(Xs, Ys, Xt, Yt)
+        acc = TSL(eff_dim, eff_lamb, tsl_iter).fit_predict(Xs, Ys, Xt, Yt)
     elif method_name == "JDA":
-        acc = JDA(dim, lamb, jda_iter).fit_predict(Xs, Ys, Xt, Yt)
+        acc = JDA(eff_dim, eff_lamb, jda_iter).fit_predict(Xs, Ys, Xt, Yt)
     else:
         raise ValueError(f"Unknown method: {method_name}")
 
@@ -574,6 +599,18 @@ def run_comparison(args):
     # Run methods
     results = {}
 
+    # Build method-specific parameters
+    method_params = {
+        "pca_dim": args.pca_dim,
+        "gfk_dim": args.gfk_dim,
+        "tca_dim": args.tca_dim,
+        "tca_lamb": args.tca_lamb,
+        "tsl_dim": args.tsl_dim,
+        "tsl_lamb": args.tsl_lamb,
+        "jda_dim": args.jda_dim,
+        "jda_lamb": args.jda_lamb,
+    }
+
     if args.parallel and len(method_list) > 1:
         # Parallel execution using ThreadPoolExecutor
         print(f"\nRunning {len(method_list)} methods in parallel: {', '.join(method_list)}")
@@ -582,7 +619,7 @@ def run_comparison(args):
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
             # Submit all tasks
             future_to_method = {
-                executor.submit(run_single_method, method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter): method_name
+                executor.submit(run_single_method, method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter, method_params): method_name
                 for method_name in method_list
             }
 
@@ -599,7 +636,7 @@ def run_comparison(args):
         # Sequential execution
         print(f"\nRunning {len(method_list)} methods: {', '.join(method_list)}")
         for method_name in tqdm(method_list, desc="Methods", unit="method"):
-            acc, runtime = run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter)
+            acc, runtime = run_single_method(method_name, Xs, Ys, Xt, Yt, dim, lamb, jda_iter, tsl_iter, method_params)
             results[method_name] = (acc, runtime)
 
     # Print results
@@ -696,6 +733,24 @@ Examples:
                             help="Iterations for JDA (default: use --iter value)")
     param_group.add_argument("--tsl-iter", type=int, default=None,
                             help="Iterations for TSL internal optimization (default: use --iter value)")
+
+    # Method-specific parameters
+    param_group.add_argument("--pca-dim", type=int, default=None,
+                            help="Dimensionality for PCA")
+    param_group.add_argument("--gfk-dim", type=int, default=None,
+                            help="Dimensionality for GFK")
+    param_group.add_argument("--tca-dim", type=int, default=None,
+                            help="Dimensionality for TCA")
+    param_group.add_argument("--tca-lamb", type=float, default=None,
+                            help="Regularization for TCA")
+    param_group.add_argument("--tsl-dim", type=int, default=None,
+                            help="Dimensionality for TSL")
+    param_group.add_argument("--tsl-lamb", type=float, default=None,
+                            help="Regularization for TSL")
+    param_group.add_argument("--jda-dim", type=int, default=None,
+                            help="Dimensionality for JDA")
+    param_group.add_argument("--jda-lamb", type=float, default=None,
+                            help="Regularization for JDA")
 
     # Output options
     parser.add_argument("--methods", type=str, default="all",

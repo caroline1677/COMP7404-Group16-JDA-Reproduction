@@ -110,12 +110,12 @@ def load_preset_data(dataset_type, src_name, tar_name, data_dir="data"):
 
 # ============== Method Implementations ==============
 def run_pca(Xs, Ys, Xt, Yt, dim):
-    """PCA: subspace dimensionality search."""
-    # Combine for PCA
-    X = np.vstack([Xs, Xt])
-    pca = PCA(n_components=dim)
-    pca.fit(X)
-    Xs_new = pca.transform(Xs)
+    """PCA: subspace dimensionality search.
+    Note: Only use source data to fit PCA (no target label leakage).
+    """
+    # Only use source data to fit PCA
+    pca = PCA(n_components=min(dim, Xs.shape[1]))
+    Xs_new = pca.fit_transform(Xs)
     Xt_new = pca.transform(Xt)
 
     clf = KNeighborsClassifier(n_neighbors=1)

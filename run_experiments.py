@@ -78,8 +78,14 @@ def main():
     # Read config file
     experiments = []
     with open(args.config, 'r') as f:
-        reader = csv.DictReader(f)
+        lines = [line for line in f if line.strip() and not line.strip().startswith('#')]
+        if not lines:
+            print("Error: No valid experiments found in config file")
+            return
+        reader = csv.DictReader(lines)
         for row in reader:
+            if not row or not any(row.values()):
+                continue
             experiments.append(row)
 
     print(f"Loaded {len(experiments)} experiment configurations")

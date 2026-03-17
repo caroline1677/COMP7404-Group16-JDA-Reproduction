@@ -69,7 +69,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 import sklearn.metrics
 from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
 np.random.seed(42)
 
@@ -378,22 +378,28 @@ def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):
 
 # ============== Grid Search with Parallel Execution ==============
 def tune_pca_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for PCA with ProcessPoolExecutor for true parallelism."""
+    """Grid search for PCA with ThreadPoolExecutor (fast for simple methods)."""
     if verbose:
-        print(f"  Tuning PCA: {len(k_values)} values with {workers} workers (ProcessPool)...")
-
-    # Prepare tasks - pass data to each worker
-    tasks = [(k, Xs, Ys, Xt, Yt) for k in k_values]
+        print(f"  Tuning PCA: {len(k_values)} values with {workers} workers (ThreadPool)...")
 
     start_time = time.time()
     results = []
 
-    with ProcessPoolExecutor(max_workers=workers) as executor:
-        # Use tqdm to show progress
-        futures = list(tqdm(executor.map(_pca_task, tasks), total=len(k_values), desc="  PCA", leave=False))
+    def run_task(k):
+        start = time.time()
+        acc = run_pca(Xs, Ys, Xt, Yt, k)
+        runtime = time.time() - start
+        return (k, acc, runtime)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(run_task, k): k for k in k_values}
+        with tqdm(total=len(k_values), desc="  PCA", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     runtime = time.time() - start_time
-    results = [(k, acc, runtime/len(k_values)) for k, acc in futures]
 
     if target_acc is not None:
         best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
@@ -446,19 +452,28 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True)
 
 
 def tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for GFK with ProcessPoolExecutor for true parallelism."""
+    """Grid search for GFK with ThreadPoolExecutor (fast for simple methods)."""
     if verbose:
-        print(f"  Tuning GFK: {len(k_values)} values with {workers} workers (ProcessPool)...")
+        print(f"  Tuning GFK: {len(k_values)} values with {workers} workers (ThreadPool)...")
 
-    tasks = [(k, Xs, Ys, Xt, Yt) for k in k_values]
     start_time = time.time()
     results = []
 
-    with ProcessPoolExecutor(max_workers=workers) as executor:
-        futures = list(tqdm(executor.map(_gfk_task, tasks), total=len(k_values), desc="  GFK", leave=False))
+    def run_task(k):
+        start = time.time()
+        acc = run_gfk(Xs, Ys, Xt, Yt, k)
+        runtime = time.time() - start
+        return (k, acc, runtime)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(run_task, k): k for k in k_values}
+        with tqdm(total=len(k_values), desc="  GFK", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     runtime = time.time() - start_time
-    results = [(k, acc, runtime/len(k_values)) for k, acc in futures]
 
     if target_acc is not None:
         best_k, best_acc, _ = min(results, key=lambda x: abs(x[1] - target_acc))
@@ -511,21 +526,28 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True)
 
 
 def tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for TCA with ProcessPoolExecutor for true parallelism."""
+    """Grid search for TCA with ThreadPoolExecutor (fast for simple methods)."""
     tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
     total = len(tasks)
 
     if verbose:
-        print(f"  Tuning TCA: {total} combinations with {workers} workers (ProcessPool)...")
-
-    # Prepare tasks with data
-    task_args = [(task, Xs, Ys, Xt, Yt) for task in tasks]
+        print(f"  Tuning TCA: {total} combinations with {workers} workers (ThreadPool)...")
 
     start_time = time.time()
     results = []
 
-    with ProcessPoolExecutor(max_workers=workers) as executor:
-        results = list(tqdm(executor.map(_tca_task, task_args), total=total, desc="  TCA", leave=False))
+    def run_task(task):
+        k, lamb = task
+        acc = run_tca(Xs, Ys, Xt, Yt, k, lamb)
+        return ({"k": k, "lamb": lamb}, acc)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(run_task, task): task for task in tasks}
+        with tqdm(total=total, desc="  TCA", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     runtime = time.time() - start_time
 

@@ -11,7 +11,36 @@ target domain labels are unknown.
 Usage:
     python tune_parameters.py --dataset digit --src USPS --tar MNIST
     python tune_parameters.py --dataset digit --src USPS --tar MNIST --methods pca,gfk
+    python tune_parameters.py --dataset digit --src USPS --tar MNIST --compare-paper
 """
+
+# Original paper results (for comparison)
+PAPER_RESULTS = {
+    # Digit datasets
+    ("digit", "USPS", "MNIST"): {"NN": 44.70, "PCA": 44.95, "GFK": 46.45, "TCA": 51.05, "TSL": 53.75, "JDA": 59.65},
+    ("digit", "MNIST", "USPS"): {"NN": 65.94, "PCA": 66.22, "GFK": 67.22, "TCA": 56.28, "TSL": 66.06, "JDA": 67.28},
+    # COIL datasets
+    ("coil", "COIL1", "COIL2"): {"NN": 83.61, "PCA": 84.72, "GFK": 72.50, "TCA": 88.47, "TSL": 88.06, "JDA": 89.31},
+    ("coil", "COIL2", "COIL1"): {"NN": 82.78, "PCA": 84.03, "GFK": 74.17, "TCA": 85.83, "TSL": 87.92, "JDA": 88.47},
+    # PIE datasets (PIE1=PIE05, PIE2=PIE07, PIE3=PIE09, PIE4=PIE27, PIE5=PIE29)
+    ("pie", "PIE1", "PIE2"): {"NN": 26.09, "PCA": 24.80, "GFK": 26.15, "TCA": 40.76, "TSL": 44.08, "JDA": 58.81},
+    ("pie", "PIE1", "PIE3"): {"NN": 26.59, "PCA": 25.18, "GFK": 27.27, "TCA": 41.79, "TSL": 47.49, "JDA": 54.23},
+    ("pie", "PIE1", "PIE4"): {"NN": 30.67, "PCA": 29.26, "GFK": 31.15, "TCA": 59.63, "TSL": 62.78, "JDA": 84.50},
+    ("pie", "PIE1", "PIE5"): {"NN": 16.67, "PCA": 16.30, "GFK": 17.59, "TCA": 29.35, "TSL": 36.15, "JDA": 49.75},
+    # SURF datasets (C=Caltech10, A=amazon, W=webcam, D=dslr)
+    ("surf", "Caltech10", "amazon"): {"NN": 23.70, "PCA": 36.95, "GFK": 41.02, "TCA": 38.20, "TSL": 44.47, "JDA": 44.78},
+    ("surf", "Caltech10", "webcam"): {"NN": 25.76, "PCA": 32.54, "GFK": 40.68, "TCA": 38.64, "TSL": 34.24, "JDA": 41.69},
+    ("surf", "Caltech10", "dslr"): {"NN": 25.48, "PCA": 38.22, "GFK": 38.85, "TCA": 41.40, "TSL": 43.31, "JDA": 45.22},
+    ("surf", "amazon", "Caltech10"): {"NN": 26.00, "PCA": 34.73, "GFK": 40.25, "TCA": 37.76, "TSL": 37.58, "JDA": 39.36},
+    ("surf", "amazon", "webcam"): {"NN": 29.83, "PCA": 35.59, "GFK": 38.98, "TCA": 37.63, "TSL": 33.90, "JDA": 37.97},
+    ("surf", "amazon", "dslr"): {"NN": 25.48, "PCA": 27.39, "GFK": 36.31, "TCA": 33.12, "TSL": 26.11, "JDA": 39.49},
+    ("surf", "webcam", "Caltech10"): {"NN": 19.86, "PCA": 26.36, "GFK": 30.72, "TCA": 29.30, "TSL": 29.83, "JDA": 31.17},
+    ("surf", "webcam", "amazon"): {"NN": 22.96, "PCA": 31.00, "GFK": 29.75, "TCA": 30.06, "TSL": 30.27, "JDA": 32.78},
+    ("surf", "webcam", "dslr"): {"NN": 59.24, "PCA": 77.07, "GFK": 80.89, "TCA": 87.26, "TSL": 87.26, "JDA": 89.17},
+    ("surf", "dslr", "Caltech10"): {"NN": 26.27, "PCA": 29.65, "GFK": 30.28, "TCA": 31.70, "TSL": 28.50, "JDA": 31.52},
+    ("surf", "dslr", "amazon"): {"NN": 28.50, "PCA": 32.05, "GFK": 32.05, "TCA": 32.15, "TSL": 27.56, "JDA": 33.09},
+    ("surf", "dslr", "webcam"): {"NN": 63.39, "PCA": 75.93, "GFK": 75.59, "TCA": 86.10, "TSL": 89.49, "JDA": 89.49},
+}
 
 import argparse
 import os
@@ -411,6 +440,7 @@ def main():
     parser.add_argument("--tar", type=str, required=True, help="Target domain name")
     parser.add_argument("--data-dir", type=str, default="data", help="Data directory")
     parser.add_argument("--methods", type=str, default="all", help="Methods: all or comma-separated (pca,gfk,tca,tsl,jda)")
+    parser.add_argument("--compare-paper", action="store_true", help="Compare results with original paper")
     parser.add_argument("--output", type=str, default=None, help="Output CSV file")
     args = parser.parse_args()
 
@@ -460,15 +490,35 @@ def main():
 
     # Print results
     print("\n" + "="*60)
-    print("Tuning Results")
+    print("Tuning Results (Best Parameters for Maximum Accuracy)")
     print("="*60)
-    print(f"{'Method':<8} {'Best k':<10} {'Best λ':<10} {'Accuracy':<12} {'Runtime':<10}")
-    print("-"*60)
 
-    for method, data in results.items():
-        k = data["params"].get("k", "-")
-        lamb = data["params"].get("lamb", "-")
-        print(f"{method:<8} {str(k):<10} {str(lamb):<10} {data['acc']:.2f}%")
+    # Get paper results for comparison
+    paper_key = (args.dataset, args.src, args.tar)
+    paper_data = PAPER_RESULTS.get(paper_key, {})
+
+    if args.compare_paper and paper_data:
+        print(f"{'Method':<8} {'k':<6} {'λ':<8} {'Ours':<10} {'Paper':<10} {'Diff':<10}")
+        print("-"*70)
+
+        for method, data in results.items():
+            k = data["params"].get("k", "-")
+            lamb = data["params"].get("lamb", "-")
+            our_acc = data["acc"]
+            paper_acc = paper_data.get(method, "-")
+
+            if paper_acc != "-":
+                diff = our_acc - paper_acc
+                print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>6.2f}% {paper_acc:>6.2f}% {diff:>+6.2f}%")
+            else:
+                print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>6.2f}% {'N/A':<10}")
+    else:
+        print(f"{'Method':<8} {'Best k':<10} {'Best λ':<10} {'Accuracy':<12}")
+        print("-"*60)
+        for method, data in results.items():
+            k = data["params"].get("k", "-")
+            lamb = data["params"].get("lamb", "-")
+            print(f"{method:<8} {str(k):<10} {str(lamb):<10} {data['acc']:.2f}%")
 
     print("-"*60)
     print(f"Total time: {total_time:.2f}s")

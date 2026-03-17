@@ -7,19 +7,19 @@
 #
 # ============================================================
 # PRESET MODE: Use built-in datasets
-# Format: dataset,src,tar,dim,lamb,iter
+# Format: dataset,src,tar,dim,lamb,iter,jda_iter,tsl_iter,pca_dim,gfk_dim,tca_dim,tca_lamb,tsl_dim,tsl_lamb,jda_dim,jda_lamb
 # ============================================================
 
-dataset,src,tar,dim,lamb,iter
-digit,USPS,MNIST,100,0.1,10
-coil,COIL1,COIL2,100,0.1,10
-pie,PIE1,PIE4,100,0.1,10
-surf,webcam,dslr,100,1.0,10
+dataset,src,tar,dim,lamb,iter,jda_iter,tsl_iter,pca_dim,gfk_dim,tca_dim,tca_lamb,tsl_dim,tsl_lamb,jda_dim,jda_lamb
+digit,USPS,MNIST,100,0.1,10,,,,,,,,
+coil,COIL1,COIL2,100,0.1,10,,,,,,,,
+pie,PIE1,PIE4,100,0.1,10,,,,,,,,
+surf,webcam,dslr,100,1.0,10,,,,,,,,
 
 # ============================================================
 # CUSTOM MODE: Use your own data (uncomment to use)
 # Format: src_file,src_feat,src_label,tar_file,tar_feat,tar_label,dim,lamb,iter
 # ============================================================
 
-# src_file,src_feat,src_label,tar_file,tar_feat,tar_label,dim,lamb,iter
-# data/my_source.mat,X,Y,data/my_target.mat,X,Y,100,0.1,10
+# src_file,src_feat,src_label,tar_file,tar_feat,tar_label,dim,lamb,iter,jda_iter,tsl_iter
+# data/my_source.mat,X,Y,data/my_target.mat,X,Y,100,0.1,10,10,10

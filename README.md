@@ -133,6 +133,15 @@ python jda_comparison.py \
 | `--iter` | int | 10 | Default iterations for JDA and TSL |
 | `--jda-iter` | int | 10 | Iterations for JDA specifically |
 | `--tsl-iter` | int | 10 | Iterations for TSL specifically |
+| **Method-Specific Parameters** | | | | Override per-method settings |
+| `--pca-dim` | int | dim | Dimensionality for PCA |
+| `--gfk-dim` | int | dim | Dimensionality for GFK |
+| `--tca-dim` | int | dim | Dimensionality for TCA |
+| `--tca-lamb` | float | lamb | Regularization for TCA |
+| `--tsl-dim` | int | dim | Dimensionality for TSL |
+| `--tsl-lamb` | float | lamb | Regularization for TSL |
+| `--jda-dim` | int | dim | Dimensionality for JDA |
+| `--jda-lamb` | float | lamb | Regularization for JDA |
 | **Output Options** | | | |
 | `--methods` | str | all | Methods: 'all' or comma-separated (nn,pca,tca,gfk,tsl,jda) |
 | `--parallel` | flag | False | Run methods in parallel (multi-threaded) |
@@ -144,6 +153,17 @@ python jda_comparison.py \
 Run with custom parameters:
 ```bash
 python jda_comparison.py --dataset surf --src webcam --tar dslr --dim 50 --lamb 1.0 --jda-iter 15
+```
+
+Run with method-specific parameters:
+```bash
+python jda_comparison.py --dataset digit --src USPS --tar MNIST \
+    --methods pca,gfk,tca,tsl,jda \
+    --pca-dim 40 \
+    --gfk-dim 60 \
+    --tca-dim 50 --tca-lamb 0.1 \
+    --tsl-dim 80 --tsl-lamb 1.0 \
+    --jda-dim 100 --jda-lamb 0.1
 ```
 
 Run only specific methods:
@@ -197,6 +217,48 @@ Results are saved in CSV format with accuracy and runtime for each method:
 Task,NN_Acc,NN_Time,PCA_Acc,PCA_Time,GFK_Acc,GFK_Time,TCA_Acc,TCA_Time,TSL_Acc,TSL_Time,JDA_Acc,JDA_Time
 USPS -> MNIST,64.44,0.123,65.06,0.234,31.89,0.456,58.11,0.789,58.94,1.234,72.44,2.345
 ```
+
+## Parameter Tuning
+
+Perform grid search to find optimal hyperparameters for each method:
+
+```bash
+# Tune all methods
+python tune_parameters.py --dataset digit --src USPS --tar MNIST
+
+# Tune specific methods
+python tune_parameters.py --dataset digit --src USPS --tar MNIST --methods pca,gfk,tca
+
+# Compare with original paper results
+python tune_parameters.py --dataset digit --src USPS --tar MNIST --compare-paper
+
+# Run with parallel (faster for large parameter search)
+python tune_parameters.py --dataset digit --src USPS --tar MNIST --parallel --workers 4
+```
+
+### Search Space (as per paper)
+
+| Method | k Range | λ Values |
+|--------|---------|----------|
+| PCA | 10,20,30,...,200 | - |
+| GFK | 10,20,30,...,200 | - |
+| TCA | 10,20,30,...,200 | 0.01, 0.1, 1, 10, 100 |
+| TSL | 10,20,30,...,200 | 0.01, 0.1, 1, 10, 100 |
+| JDA | 10,20,30,...,200 | 0.01, 0.1, 1, 10, 100 |
+
+### Output Example
+
+```
+Method   k      λ        Ours       Paper      Diff
+----------------------------------------------------------------------
+PCA      40     -         66.78%   44.95%   +21.83%
+GFK      60     -         65.00%   46.45%   +18.55%
+TCA      50     0.1       58.89%   51.05%    +7.84%
+TSL      70     1.0       59.12%   53.75%    +5.37%
+JDA      100    0.1       72.44%   59.65%   +12.79%
+```
+
+**NOTE**: Using target domain labels for parameter tuning is only acceptable for research reproduction. In real-world scenarios, this is not feasible as target domain labels are unknown.
 
 ## Method Details
 

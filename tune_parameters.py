@@ -48,9 +48,12 @@ import sys
 import time
 import numpy as np
 import scipy.io
+import scipy.linalg
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 import sklearn.metrics
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 np.random.seed(42)
 
@@ -188,7 +191,7 @@ def run_tca(Xs, Ys, Xt, Yt, dim, lamb):
     a = (a + a.T) / 2
     b = (b + b.T) / 2
 
-    w, V = np.linalg.eig(a, b)
+    w, V = scipy.linalg.eig(a, b)
     w = np.real(w)
     V = np.real(V)
     ind = np.argsort(w)
@@ -243,21 +246,22 @@ def run_tsl(Xs, Ys, Xt, Yt, dim, lamb, max_iter=10):
         ws = np.ones(ns) / ns
         wt = np.ones(nt) / nt
 
-        # Bregman divergence approximation
+        # Bregman divergence approximation - simplified MMD matrix
         M = np.zeros((n, n))
+        # Only fill source-target and target-source blocks
         for i in range(ns):
             for j in range(nt):
                 diff = Xs_w[i] - Xt_w[j]
                 d = diff @ ((cov_s_inv + cov_t_inv) / 2) @ diff
-                M[i, j] = d
-                M[i + ns, j + nt] = -d
+                M[i, ns + j] = d
+                M[ns + j, i] = d
 
         # Solve generalized eigenvalue problem
         Sb = X @ M @ X.T + lamb * np.eye(m)
         Sw = X @ X.T + lamb * np.eye(m)
 
         try:
-            w, V = np.linalg.eig(np.linalg.pinv(Sw) @ Sb)
+            w, V = scipy.linalg.eig(np.linalg.pinv(Sw) @ Sb)
             w = np.real(w)
             V = np.real(V)
             ind = np.argsort(w)[::-1]
@@ -319,7 +323,7 @@ def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):
         B = (B + B.T) / 2
 
         try:
-            w, V = np.linalg.eig(np.linalg.pinv(B) @ A)
+            w, V = scipy.linalg.eig(np.linalg.pinv(B) @ A)
             w = np.real(w)
             V = np.real(V)
             ind = np.argsort(w)[::-1]
@@ -442,6 +446,8 @@ def main():
     parser.add_argument("--methods", type=str, default="all", help="Methods: all or comma-separated (pca,gfk,tca,tsl,jda)")
     parser.add_argument("--compare-paper", action="store_true", help="Compare results with original paper")
     parser.add_argument("--output", type=str, default=None, help="Output CSV file")
+    parser.add_argument("--parallel", action="store_true", help="Run parameter search in parallel")
+    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
     args = parser.parse_args()
 
     print("="*60)

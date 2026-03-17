@@ -384,24 +384,25 @@ def run_jda(Xs, Ys, Xt, Yt, dim, lamb, T=10):
 
 # ============== Grid Search with Parallel Execution ==============
 def tune_pca_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for PCA with parallel execution."""
+    """Grid search for PCA with parallel execution and tqdm progress."""
     results = []
-    tasks = [(k,) for k in k_values]
 
     if verbose:
         print(f"  Tuning PCA: {len(k_values)} values with {workers} workers...")
 
-    def run_task(task):
-        k = task[0]
+    def run_task(k):
         start = time.time()
         acc = run_pca(Xs, Ys, Xt, Yt, k)
         runtime = time.time() - start
         return (k, acc, runtime)
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = list(executor.map(run_task, tasks))
-
-    results = list(futures)
+        futures = {executor.submit(run_task, k): k for k in k_values}
+        with tqdm(total=len(k_values), desc="  PCA", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     if target_acc is not None:
         best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
@@ -454,7 +455,7 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True)
 
 
 def tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for GFK with parallel execution."""
+    """Grid search for GFK with parallel execution and tqdm progress."""
     results = []
 
     if verbose:
@@ -467,7 +468,12 @@ def tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verb
         return (k, acc, runtime)
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(run_task, k_values))
+        futures = {executor.submit(run_task, k): k for k in k_values}
+        with tqdm(total=len(k_values), desc="  GFK", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     if target_acc is not None:
         best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
@@ -520,7 +526,7 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True)
 
 
 def tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for TCA with parallel execution."""
+    """Grid search for TCA with parallel execution and tqdm progress."""
     start_time = time.time()
     tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
     total = len(tasks)
@@ -533,8 +539,14 @@ def tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
         acc = run_tca(Xs, Ys, Xt, Yt, k, lamb)
         return ({"k": k, "lamb": lamb}, acc)
 
+    results = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(run_task, tasks))
+        futures = {executor.submit(run_task, task): task for task in tasks}
+        with tqdm(total=total, desc="  TCA", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     runtime = time.time() - start_time
 
@@ -592,7 +604,7 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, 
 
 
 def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for TSL with parallel execution."""
+    """Grid search for TSL with parallel execution and tqdm progress."""
     start_time = time.time()
     tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
     total = len(tasks)
@@ -605,8 +617,14 @@ def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
         acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
         return ({"k": k, "lamb": lamb}, acc)
 
+    results = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(run_task, tasks))
+        futures = {executor.submit(run_task, task): task for task in tasks}
+        with tqdm(total=total, desc="  TSL", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     runtime = time.time() - start_time
 
@@ -664,7 +682,7 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, 
 
 
 def tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
-    """Grid search for JDA with parallel execution."""
+    """Grid search for JDA with parallel execution and tqdm progress."""
     start_time = time.time()
     tasks = [(k, lamb) for k in k_values for lamb in lamb_values]
     total = len(tasks)
@@ -677,8 +695,14 @@ def tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
         acc = run_jda(Xs, Ys, Xt, Yt, k, lamb, T=JDA_ITERS)
         return ({"k": k, "lamb": lamb}, acc)
 
+    results = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        results = list(executor.map(run_task, tasks))
+        futures = {executor.submit(run_task, task): task for task in tasks}
+        with tqdm(total=total, desc="  JDA", leave=False) as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                pbar.update(1)
 
     runtime = time.time() - start_time
 

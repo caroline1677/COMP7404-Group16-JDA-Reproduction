@@ -74,7 +74,10 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_compl
 np.random.seed(42)
 
 # Parameter search space as per paper
-K_VALUES = list(range(10, 151, 10))  # [10, 20, 30, ..., 150]
+# PCA, GFK, TCA use k up to 200
+K_VALUES_LARGE = list(range(10, 201, 10))  # [10, 20, 30, ..., 200]
+# TSL, JDA use k up to 150 (slower methods)
+K_VALUES_SMALL = list(range(10, 151, 10))  # [10, 20, 30, ..., 150]
 LAMBDA_VALUES = [0.01, 0.1, 1.0]  # Reduced set as per paper
 JDA_ITERS = 10  # Fixed as per paper
 
@@ -400,22 +403,23 @@ def tune_pca_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verb
                 pbar.update(1)
 
     runtime = time.time() - start_time
+    avg_time = runtime / len(k_values)
 
     if target_acc is not None:
         best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return {"k": best_k}, best_acc, runtime
+    return {"k": best_k}, best_acc, avg_time
 
 
 def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True):
@@ -439,14 +443,14 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True)
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, AvgTime={best_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, AvgTime={best_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, AvgTime={best_time:.3f}s")
 
     return {"k": best_k}, best_acc, best_time
 
@@ -474,22 +478,23 @@ def tune_gfk_parallel(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=4, verb
                 pbar.update(1)
 
     runtime = time.time() - start_time
+    avg_time = runtime / len(k_values)
 
     if target_acc is not None:
         best_k, best_acc, _ = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_k, best_acc, _ = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return {"k": best_k}, best_acc, runtime
+    return {"k": best_k}, best_acc, avg_time
 
 
 def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True):
@@ -513,14 +518,14 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, workers=1, verbose=True)
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_k}, Acc={best_acc:.2f}%, AvgTime={best_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, AvgTime={best_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, AvgTime={best_time:.3f}s")
 
     return {"k": best_k}, best_acc, best_time
 
@@ -550,22 +555,23 @@ def tune_tca_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
                 pbar.update(1)
 
     runtime = time.time() - start_time
+    avg_time = runtime / total
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return best_params, best_acc, runtime
+    return best_params, best_acc, runtime / (len(k_values) * len(lamb_values))
 
 
 def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, verbose=True):
@@ -586,22 +592,23 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, 
             results.append(({"k": k, "lamb": lamb}, acc))
 
     runtime = time.time() - start_time
+    avg_time = runtime / total
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return best_params, best_acc, runtime
+    return best_params, best_acc, runtime / total
 
 
 def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
@@ -622,22 +629,23 @@ def tune_tsl_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
         results = list(tqdm(executor.map(_tsl_task, task_args), total=total, desc="  TSL", leave=False))
 
     runtime = time.time() - start_time
+    avg_time = runtime / total
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return best_params, best_acc, runtime
+    return best_params, best_acc, runtime / total
 
 
 def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, verbose=True):
@@ -658,22 +666,23 @@ def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, 
             results.append(({"k": k, "lamb": lamb}, acc))
 
     runtime = time.time() - start_time
+    avg_time = runtime / total
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return best_params, best_acc, runtime
+    return best_params, best_acc, runtime / total
 
 
 def tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=4, verbose=True):
@@ -694,22 +703,23 @@ def tune_jda_parallel(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, wo
         results = list(tqdm(executor.map(_jda_task, task_args), total=total, desc="  JDA", leave=False))
 
     runtime = time.time() - start_time
+    avg_time = runtime / total
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return best_params, best_acc, runtime
+    return best_params, best_acc, runtime / total
 
 
 def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, verbose=True):
@@ -730,22 +740,23 @@ def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, 
             results.append(({"k": k, "lamb": lamb}, acc))
 
     runtime = time.time() - start_time
+    avg_time = runtime / total
 
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
+                print(f"    Found within +/-1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within +/-1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, AvgTime={avg_time:.3f}s")
 
-    return best_params, best_acc, runtime
+    return best_params, best_acc, runtime / total
 
 
 # ============== Main ==============
@@ -813,7 +824,7 @@ def main():
             runtime = time.time() - start
             results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
             if verbose:
-                print(f"    NN: {acc:.2f}%, Time={runtime:.1f}s")
+                print(f"    NN: {acc:.2f}%, AvgTime={avg_time:.3f}s")
             continue
 
         if verbose:
@@ -824,19 +835,19 @@ def main():
 
         try:
             if method == "pca":
-                params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES_LARGE, target_acc=target_acc, workers=use_workers)
                 results["PCA"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "gfk":
-                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES_LARGE, target_acc=target_acc, workers=use_workers)
                 results["GFK"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "tca":
-                params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES_LARGE, lamb_values, target_acc=target_acc, workers=use_workers)
                 results["TCA"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "tsl":
-                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES_SMALL, lamb_values, target_acc=target_acc, workers=use_workers)
                 results["TSL"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "jda":
-                params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES_SMALL, lamb_values, target_acc=target_acc, workers=use_workers)
                 results["JDA"] = {"params": params, "acc": acc, "runtime": runtime}
         except Exception as e:
             print(f"Error in {method}: {e}")

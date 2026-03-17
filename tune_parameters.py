@@ -74,7 +74,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 np.random.seed(42)
 
 # Parameter search space as per paper
-K_VALUES = list(range(10, 201, 10))  # [10, 20, 30, ..., 200]
+K_VALUES = list(range(10, 151, 10))  # [10, 20, 30, ..., 150]
 LAMBDA_VALUES = [0.01, 0.1, 1.0]  # Reduced set as per paper
 JDA_ITERS = 10  # Fixed as per paper
 
@@ -128,6 +128,14 @@ def load_preset_data(dataset_type, src_name, tar_name, data_dir="data"):
 
 
 # ============== Method Implementations ==============
+def run_nn(Xs, Ys, Xt, Yt):
+    """NN: Nearest Neighbor baseline (1-NN)."""
+    clf = KNeighborsClassifier(n_neighbors=1)
+    clf.fit(Xs, Ys.ravel())
+    acc = sklearn.metrics.accuracy_score(Yt, clf.predict(Xt)) * 100
+    return acc
+
+
 def run_pca(Xs, Ys, Xt, Yt, dim):
     """PCA: subspace dimensionality search.
     Note: Only use source data to fit PCA (no target label leakage).
@@ -363,33 +371,35 @@ def tune_pca(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
         target_acc: If provided, find parameters closest to this accuracy (for paper reproduction)
                    If None, find parameters with maximum accuracy
     """
-    results = []  # Store all (k, acc) pairs
+    results = []  # Store all (k, acc, time) tuples
 
     if verbose:
         print(f"  Tuning PCA: {len(k_values)} values...")
 
     for k in tqdm(k_values, desc="PCA", leave=False):
+        start = time.time()
         acc = run_pca(Xs, Ys, Xt, Yt, k)
-        results.append((k, acc))
+        runtime = time.time() - start
+        results.append((k, acc, runtime))
 
     if target_acc is not None:
         # Find k closest to target accuracy
-        best_k, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         # Check if within ±1.5%
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         # Find maximum accuracy
-        best_k, best_acc = max(results, key=lambda x: x[1])
+        best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%")
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
 
-    return {"k": best_k}, best_acc
+    return {"k": best_k}, best_acc, best_time
 
 
 def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
@@ -400,28 +410,31 @@ def tune_gfk(Xs, Ys, Xt, Yt, k_values, target_acc=None, verbose=True):
         print(f"  Tuning GFK: {len(k_values)} values...")
 
     for k in tqdm(k_values, desc="GFK", leave=False):
+        start = time.time()
         acc = run_gfk(Xs, Ys, Xt, Yt, k)
-        results.append((k, acc))
+        runtime = time.time() - start
+        results.append((k, acc, runtime))
 
     if target_acc is not None:
-        best_k, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
+        best_k, best_acc, best_time = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+                print(f"    Found within ±1.5%: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within ±1.5%, closest: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
-        best_k, best_acc = max(results, key=lambda x: x[1])
+        best_k, best_acc, best_time = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%")
+            print(f"    Best: k={best_k}, Acc={best_acc:.2f}%, Time={best_time:.2f}s")
 
-    return {"k": best_k}, best_acc
+    return {"k": best_k}, best_acc, best_time
 
 
 def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
     """Grid search for TCA."""
+    start_time = time.time()
     results = []
     total = len(k_values) * len(lamb_values)
 
@@ -433,79 +446,89 @@ def tune_tca(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=Tru
             acc = run_tca(Xs, Ys, Xt, Yt, k, lamb)
             results.append(({"k": k, "lamb": lamb}, acc))
 
+    runtime = time.time() - start_time
+
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
 
-    return best_params, best_acc
+    return best_params, best_acc, runtime
 
 
 def tune_tsl(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
     """Grid search for TSL."""
+    start_time = time.time()
     results = []
     total = len(k_values) * len(lamb_values)
 
     if verbose:
-        print(f"  Tuning TSL: {len(k_values)} x {len(lamb_values)} = {total} combinations...")
+        print(f"  Tuning TSL: {total} combinations...")
 
     for k in k_values:
         for lamb in tqdm(lamb_values, desc=f"TSL(k={k})", leave=False):
             acc = run_tsl(Xs, Ys, Xt, Yt, k, lamb)
             results.append(({"k": k, "lamb": lamb}, acc))
 
+    runtime = time.time() - start_time
+
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
 
-    return best_params, best_acc
+    return best_params, best_acc, runtime
 
 
 def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, verbose=True):
     """Grid search for JDA."""
+    start_time = time.time()
     results = []
     total = len(k_values) * len(lamb_values)
 
     if verbose:
-        print(f"  Tuning JDA: {len(k_values)} x {len(lamb_values)} = {total} combinations...")
+        print(f"  Tuning JDA: {total} combinations...")
 
     for k in k_values:
         for lamb in tqdm(lamb_values, desc=f"JDA(k={k})", leave=False):
             acc = run_jda(Xs, Ys, Xt, Yt, k, lamb, T=JDA_ITERS)
             results.append(({"k": k, "lamb": lamb}, acc))
 
+    runtime = time.time() - start_time
+
     if target_acc is not None:
         best_params, best_acc = min(results, key=lambda x: abs(x[1] - target_acc))
         diff = abs(best_acc - target_acc)
         if diff <= 1.5:
             if verbose:
-                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%)")
+                print(f"    Found within ±1.5%: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%)")
         else:
             if verbose:
-                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}% (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
+                print(f"    NOT within ±1.5%, closest: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s (target: {target_acc:.2f}%, diff: {diff:.2f}%)")
     else:
         best_params, best_acc = max(results, key=lambda x: x[1])
         if verbose:
-            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%")
+            print(f"    Best: k={best_params['k']}, lamb={best_params['lamb']}, Acc={best_acc:.2f}%, Time={runtime:.1f}s")
+
+    return best_params, best_acc, runtime
 
     return best_params, best_acc
 
@@ -523,6 +546,8 @@ def main():
     parser.add_argument("--parallel", action="store_true", help="Run parameter search in parallel")
     parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
     args = parser.parse_args()
+
+    verbose = True  # Enable verbose output
 
     print("="*60)
     print(f"Parameter Tuning: {args.src} -> {args.tar}")
@@ -559,21 +584,31 @@ def main():
         if args.compare_paper and paper_data:
             target_acc = paper_data.get(method.upper(), None)
 
+        if method == "nn":
+            # NN doesn't need tuning, just run once
+            if verbose:
+                print("  Running NN (baseline)...")
+            start = time.time()
+            acc = run_nn(Xs, Ys, Xt, Yt)
+            runtime = time.time() - start
+            results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
+            continue
+
         if method == "pca":
-            params, acc = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
-            results["PCA"] = {"params": params, "acc": acc}
+            params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
+            results["PCA"] = {"params": params, "acc": acc, "runtime": runtime}
         elif method == "gfk":
-            params, acc = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
-            results["GFK"] = {"params": params, "acc": acc}
+            params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES, target_acc=target_acc)
+            results["GFK"] = {"params": params, "acc": acc, "runtime": runtime}
         elif method == "tca":
-            params, acc = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-            results["TCA"] = {"params": params, "acc": acc}
+            params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
+            results["TCA"] = {"params": params, "acc": acc, "runtime": runtime}
         elif method == "tsl":
-            params, acc = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-            results["TSL"] = {"params": params, "acc": acc}
+            params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
+            results["TSL"] = {"params": params, "acc": acc, "runtime": runtime}
         elif method == "jda":
-            params, acc = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
-            results["JDA"] = {"params": params, "acc": acc}
+            params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES, lamb_values, target_acc=target_acc)
+            results["JDA"] = {"params": params, "acc": acc, "runtime": runtime}
 
     total_time = time.time() - start_time
 
@@ -590,44 +625,50 @@ def main():
     paper_data = PAPER_RESULTS.get(paper_key, {})
 
     if args.compare_paper and paper_data:
-        print(f"{'Method':<8} {'k':<6} {'λ':<8} {'Ours':<10} {'Paper':<10} {'Diff':<10}")
-        print("-"*70)
+        print(f"{'Method':<8} {'k':<6} {'λ':<8} {'Ours':<12} {'Paper':<10} {'Diff':<10} {'Time':<10}")
+        print("-"*76)
 
         for method, data in results.items():
             k = data["params"].get("k", "-")
             lamb = data["params"].get("lamb", "-")
             our_acc = data["acc"]
+            runtime = data.get("runtime", 0)
             paper_acc = paper_data.get(method, "-")
 
             if paper_acc != "-":
                 diff = our_acc - paper_acc
-                print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>6.2f}% {paper_acc:>6.2f}% {diff:>+6.2f}%")
+                print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>8.2f}% {paper_acc:>6.2f}% {diff:>+6.2f}% {runtime:>8.1f}s")
             else:
-                print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>6.2f}% {'N/A':<10}")
+                print(f"{method:<8} {str(k):<6} {str(lamb):<8} {our_acc:>8.2f}% {'N/A':<10} {'':>6} {runtime:>8.1f}s")
     else:
-        print(f"{'Method':<8} {'Best k':<10} {'Best λ':<10} {'Accuracy':<12}")
+        print(f"{'Method':<8} {'Best k':<10} {'Best λ':<10} {'Accuracy':<12} {'Time':<10}")
         print("-"*60)
         for method, data in results.items():
             k = data["params"].get("k", "-")
             lamb = data["params"].get("lamb", "-")
-            print(f"{method:<8} {str(k):<10} {str(lamb):<10} {data['acc']:.2f}%")
+            runtime = data.get("runtime", 0)
+            print(f"{method:<8} {str(k):<10} {str(lamb):<10} {data['acc']:>8.2f}% {runtime:>8.1f}s")
 
-    print("-"*60)
+    print("-"*76)
     print(f"Total time: {total_time:.2f}s")
 
-    # Save to file
+    # Save to CSV file
     if args.output:
         import csv
         file_exists = os.path.exists(args.output) and os.path.getsize(args.output) > 0
         with open(args.output, "a", newline="") as f:
             writer = csv.writer(f)
             if not file_exists:
-                writer.writerow(["Task", "Method", "k", "lambda", "Accuracy"])
+                writer.writerow(["Task", "Dataset", "Method", "k", "lambda", "Accuracy", "Paper_Acc", "Diff", "Runtime"])
             task = f"{args.src} -> {args.tar}"
             for method, data in results.items():
                 k = data["params"].get("k", "")
                 lamb = data["params"].get("lamb", "")
-                writer.writerow([task, method, k, lamb, f"{data['acc']:.2f}"])
+                runtime = data.get("runtime", 0)
+                our_acc = data["acc"]
+                paper_acc = paper_data.get(method, "-")
+                diff = our_acc - paper_acc if paper_acc != "-" else ""
+                writer.writerow([task, args.dataset, method, k, lamb, f"{our_acc:.2f}", paper_acc, f"{diff:.2f}" if diff != "" else "", f"{runtime:.1f}"])
 
     return results
 

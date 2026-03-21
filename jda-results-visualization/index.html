@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JDA 复现结果 - COMP7404 Group16</title>
+  <title>JDA Reproduction Results - COMP7404 Group16</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
@@ -15,7 +15,9 @@
       color: #e8e8e8;
       padding: 2rem;
     }
-    .container { max-width: 900px; margin: 0 auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
     header {
       text-align: center;
       margin-bottom: 2rem;
@@ -23,32 +25,122 @@
       background: rgba(255,255,255,0.05);
       border-radius: 12px;
     }
-    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: #00d9ff; }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #00d9ff; }
     .author { opacity: 0.8; font-size: 0.95rem; }
     .repo-link { margin-top: 0.5rem; }
     .repo-link a { color: #00d9ff; text-decoration: none; }
     .repo-link a:hover { text-decoration: underline; }
+
+    /* Video Section */
+    .video-section {
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .video-section h2 { color: #00d9ff; margin-bottom: 1rem; }
+    .video-container {
+      max-width: 800px;
+      margin: 0 auto;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    video { width: 100%; display: block; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 8px 8px 0 0;
+      color: #e8e8e8;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.2); }
+    .tab-btn.active {
+      background: rgba(0,217,255,0.2);
+      color: #00d9ff;
+      border-bottom: 2px solid #00d9ff;
+    }
+
+    /* Sections */
     section {
       background: rgba(255,255,255,0.06);
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
-    h2 { font-size: 1.2rem; margin-bottom: 1rem; color: #00d9ff; }
-    .chart-wrap { height: 280px; margin-bottom: 1rem; }
+    h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #00d9ff; }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.08);
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-value { font-size: 1.5rem; font-weight: bold; color: #00d9ff; }
+    .stat-label { font-size: 0.85rem; opacity: 0.8; }
+
+    /* Chart */
+    .chart-wrap { height: 350px; margin-bottom: 1rem; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.9rem;
     }
-    th, td { padding: 0.6rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    th { background: rgba(0,217,255,0.15); color: #00d9ff; }
+    th, td { padding: 0.7rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th { background: rgba(0,217,255,0.15); color: #00d9ff; white-space: nowrap; }
     .method { text-align: left; font-weight: 500; }
     .paper { color: #ffb347; }
     .ours { color: #7bed9f; }
     .diff { font-size: 0.85rem; }
     .diff.positive { color: #7bed9f; }
     .diff.negative { color: #ff6b6b; }
+    .task-name { text-align: left; }
+
+    /* Figures */
+    .figures-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.5rem;
+    }
+    .figure-item {
+      background: rgba(255,255,255,0.05);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .figure-item img {
+      width: 100%;
+      border-radius: 4px;
+    }
+    .figure-caption {
+      text-align: center;
+      margin-top: 0.5rem;
+      color: #00d9ff;
+      font-weight: 500;
+    }
+
+    /* QR Section */
     .qr-section {
       display: flex;
       flex-direction: column;
@@ -59,155 +151,401 @@
     #qrcode { background: #fff; padding: 12px; border-radius: 8px; }
     .qr-url { font-size: 0.85rem; word-break: break-all; color: #00d9ff; }
     .qr-hint { font-size: 0.9rem; opacity: 0.8; }
+    #downloadQr {
+      margin-top: 0.5rem; padding: 0.5rem 1rem;
+      background: #00d9ff; color: #1a1a2e; border: none;
+      border-radius: 6px; cursor: pointer; font-weight: 600;
+    }
+
     footer { text-align: center; margin-top: 2rem; opacity: 0.6; font-size: 0.85rem; }
+
+    /* Hidden sections */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    @media (max-width: 768px) {
+      .figures-grid { grid-template-columns: 1fr; }
+      .chart-wrap { height: 280px; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <header>
-      <h1>COMP7404 Group16 JDA</h1>
-      <p class="author">作者：quziqi | GitHub: quziqi77777-lgtm</p>
+      <h1>JDA Paper Reproduction</h1>
+      <p class="author">COMP7404 Group16 | Transfer Learning</p>
       <p class="repo-link">
-        <a href="https://github.com/caroline1677/COMP7404-Group16-JDA-Reproduction/tree/Visualization" target="_blank">仓库链接</a>
+        <a href="https://github.com/caroline1677/COMP7404-Group16-JDA-Reproduction/tree/Visualization" target="_blank">GitHub Repository</a>
       </p>
     </header>
 
-    <section>
-      <h2>MNIST ↔ USPS 准确率对比</h2>
-      <p style="margin-bottom:1rem;opacity:0.9;font-size:0.9rem;">论文数据 vs 复现结果（多 seed 平均）</p>
-      <div class="chart-wrap">
-        <canvas id="chart"></canvas>
+    <!-- Video Section -->
+    <section class="video-section">
+      <h2>Paper Introduction Video</h2>
+      <div class="video-container">
+        <video controls playsinline>
+          <source src="../../Script_JDA_Introduction.mp4" type="video/mp4">
+          Your browser does not support video playback
+        </video>
       </div>
     </section>
 
-    <section>
-      <h2>详细数据表</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>任务</th>
-            <th>Method</th>
-            <th>论文 (%)</th>
-            <th>复现 (%)</th>
-            <th>差异</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </section>
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="digit">Digit</button>
+      <button class="tab-btn" data-tab="coil">COIL</button>
+      <button class="tab-btn" data-tab="pie">PIE</button>
+      <button class="tab-btn" data-tab="surf">SURF/Office</button>
+    </div>
 
+    <!-- Overview Tab -->
+    <div id="overview" class="tab-content active">
+      <section>
+        <h2>Reproduction Results Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">36</div>
+            <div class="stat-label">Total Tasks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">6</div>
+            <div class="stat-label">Methods</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Datasets</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="overviewChart"></canvas>
+        </div>
+      </section>
+
+      <section>
+        <h2>Paper Figures - Figure 4</h2>
+        <div class="figures-grid">
+          <div class="figure-item">
+            <img src="../paper_experiments/fig4_ab.png" alt="MMD Distance and Accuracy vs Iterations">
+            <p class="figure-caption">(a) MMD Distance & (b) Accuracy vs #Iterations</p>
+          </div>
+          <div class="figure-item">
+            <img src="../paper_experiments/fig4_cd.png" alt="Similarity Matrices">
+            <p class="figure-caption">(c) TCA & (d) JDA Similarity Matrices</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Digit Tab -->
+    <div id="digit" class="tab-content">
+      <section>
+        <h2>Digit Dataset Results</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="digit-tasks">2</div>
+            <div class="stat-label">Tasks</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="digitChart"></canvas>
+        </div>
+      </section>
+      <section>
+        <h2>Detailed Results</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Method</th>
+                <th>Paper(%)</th>
+                <th>Ours(%)</th>
+                <th>Diff</th>
+              </tr>
+            </thead>
+            <tbody id="digit-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- COIL Tab -->
+    <div id="coil" class="tab-content">
+      <section>
+        <h2>COIL Dataset Results</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="coil-tasks">2</div>
+            <div class="stat-label">Tasks</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="coilChart"></canvas>
+        </div>
+      </section>
+      <section>
+        <h2>Detailed Results</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Method</th>
+                <th>Paper(%)</th>
+                <th>Ours(%)</th>
+                <th>Diff</th>
+              </tr>
+            </thead>
+            <tbody id="coil-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- PIE Tab -->
+    <div id="pie" class="tab-content">
+      <section>
+        <h2>PIE Dataset Results</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="pie-tasks">20</div>
+            <div class="stat-label">Tasks</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </section>
+      <section>
+        <h2>Detailed Results</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Method</th>
+                <th>Paper(%)</th>
+                <th>Ours(%)</th>
+                <th>Diff</th>
+              </tr>
+            </thead>
+            <tbody id="pie-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- SURF Tab -->
+    <div id="surf" class="tab-content">
+      <section>
+        <h2>SURF/Office Dataset Results</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="surf-tasks">12</div>
+            <div class="stat-label">Tasks</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="surfChart"></canvas>
+        </div>
+      </section>
+      <section>
+        <h2>Detailed Results</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Method</th>
+                <th>Paper(%)</th>
+                <th>Ours(%)</th>
+                <th>Diff</th>
+              </tr>
+            </thead>
+            <tbody id="surf-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- QR Section -->
     <section class="qr-section">
-      <h2>扫码访问</h2>
-      <p class="qr-hint">部署后扫码即可分享本页 · 右键保存二维码图片</p>
+      <h2>Scan to Access</h2>
+      <p class="qr-hint">Scan to share this page after deployment</p>
       <div id="qrcode"></div>
       <p class="qr-url" id="currentUrl"></p>
-      <button id="downloadQr" style="margin-top:0.5rem;padding:0.5rem 1rem;background:#00d9ff;color:#1a1a2e;border:none;border-radius:6px;cursor:pointer;font-weight:600;">下载二维码</button>
+      <button id="downloadQr">Download QR Code</button>
     </section>
 
     <footer>
-      JDA: Transfer Feature Learning with Joint Distribution Adaptation (Long et al., ICCV 2013)
+      JDA: Transfer Feature Learning with Joint Distribution Adaptation (ICCV 2013)
     </footer>
   </div>
 
   <script>
-    const config = {
-      title: 'COMP7404 Group16 JDA',
-      author: 'quziqi',
-      github: 'quziqi77777-lgtm',
-      repoUrl: 'https://github.com/caroline1677/COMP7404-Group16-JDA-Reproduction/tree/Visualization'
-    };
+    // Load data
+    const dataUrl = './data.json';
+    let allData = {};
 
-    const data = {
-      'MNIST → USPS': {
-        paper: { NN: 65.94, PCA: 66.22, GFK: 67.22, TCA: 56.28, TSL: 66.06, JDA: 67.28 },
-        ours: { NN: 61.64, PCA: 61.61, GFK: 60.17, TCA: 55.75, TSL: 56.17, JDA: 60.84 }
-      },
-      'USPS → MNIST': {
-        paper: { NN: 44.70, PCA: 44.95, GFK: 46.45, TCA: 51.05, TSL: 53.75, JDA: 59.65 },
-        ours: { NN: 24.95, PCA: 23.58, GFK: 26.68, TCA: 40.98, TSL: 40.43, JDA: 34.53 }
-      }
-    };
+    fetch(dataUrl)
+      .then(r => r.json())
+      .then(data => {
+        allData = data;
+        initApp();
+      })
+      .catch(e => console.error('Failed to load data:', e));
 
     const methods = ['NN', 'PCA', 'GFK', 'TCA', 'TSL', 'JDA'];
+    const colors = {
+      paper: ['rgba(255,179,71,0.8)', 'rgba(255,107,107,0.8)', 'rgba(156,136,255,0.8)', 'rgba(0,206,201,0.8)', 'rgba(253,121,168,0.8)', 'rgba(125,211,252,0.8)'],
+      ours: ['rgba(123,237,159,0.8)', 'rgba(255,234,167,0.8)', 'rgba(194,223,255,0.8)', 'rgba(255,183,178,0.8)', 'rgba(224,187,228,0.8)', 'rgba(172,227,214,0.8)']
+    };
 
-    function renderTable() {
-      const tbody = document.getElementById('tableBody');
-      let html = '';
-      for (const [task, vals] of Object.entries(data)) {
-        for (const m of methods) {
-          const p = vals.paper[m];
-          const o = vals.ours[m];
-          const diff = (o - p).toFixed(2);
-          const diffClass = diff >= 0 ? 'positive' : 'negative';
-          const diffStr = diff >= 0 ? `+${diff}` : diff;
-          html += `<tr>
-            <td>${task}</td>
-            <td class="method">${m}</td>
-            <td class="paper">${p.toFixed(2)}</td>
-            <td class="ours">${o.toFixed(2)}</td>
-            <td class="diff ${diffClass}">${diffStr}%</td>
-          </tr>`;
-        }
-      }
-      tbody.innerHTML = html;
+    function initApp() {
+      // Update task counts
+      document.getElementById('digit-tasks').textContent = Object.keys(allData.Digit || {}).length;
+      document.getElementById('coil-tasks').textContent = Object.keys(allData.COIL || {}).length;
+      document.getElementById('pie-tasks').textContent = Object.keys(allData.PIE || {}).length;
+      document.getElementById('surf-tasks').textContent = Object.keys(allData['SURF/Office'] || {}).length;
+
+      // Render overview chart
+      renderOverviewChart();
+
+      // Render dataset charts
+      renderDatasetChart('digit', 'Digit');
+      renderDatasetChart('coil', 'COIL');
+      renderDatasetChart('pie', 'PIE');
+      renderDatasetChart('surf', 'SURF/Office');
+
+      // Render tables
+      renderTable('digit-table', allData.Digit || {});
+      renderTable('coil-table', allData.COIL || {});
+      renderTable('pie-table', allData.PIE || {});
+      renderTable('surf-table', allData['SURF/Office'] || {});
+
+      // Setup tabs
+      setupTabs();
+
+      // QR code
+      renderQR();
     }
 
-    function renderChart() {
-      const ctx = document.getElementById('chart').getContext('2d');
+    function renderOverviewChart() {
+      const ctx = document.getElementById('overviewChart').getContext('2d');
+
+      // Calculate average accuracy per method
+      const avgPaper = { NN:0, PCA:0, GFK:0, TCA:0, TSL:0, JDA:0 };
+      const avgOurs = { NN:0, PCA:0, GFK:0, TCA:0, TSL:0, JDA:0 };
+      let count = 0;
+
+      Object.values(allData).forEach(dataset => {
+        Object.values(dataset).forEach(task => {
+          methods.forEach(m => {
+            if (task.paper[m] != null) { avgPaper[m] += task.paper[m]; avgOurs[m] += task.ours[m] || 0; count++; }
+          });
+        });
+      });
+
+      const paperData = methods.map(m => (avgPaper[m] / count * 100).toFixed(2));
+      const oursData = methods.map(m => (avgOurs[m] / count * 100).toFixed(2));
+
       new Chart(ctx, {
         type: 'bar',
         data: {
           labels: methods,
           datasets: [
-            {
-              label: 'MNIST→USPS 论文',
-              data: methods.map(m => data['MNIST → USPS'].paper[m]),
-              backgroundColor: 'rgba(255,179,71,0.7)',
-              borderColor: '#ffb347',
-              borderWidth: 1
-            },
-            {
-              label: 'MNIST→USPS 复现',
-              data: methods.map(m => data['MNIST → USPS'].ours[m]),
-              backgroundColor: 'rgba(123,237,159,0.7)',
-              borderColor: '#7bed9f',
-              borderWidth: 1
-            },
-            {
-              label: 'USPS→MNIST 论文',
-              data: methods.map(m => data['USPS → MNIST'].paper[m]),
-              backgroundColor: 'rgba(255,107,107,0.7)',
-              borderColor: '#ff6b6b',
-              borderWidth: 1
-            },
-            {
-              label: 'USPS→MNIST 复现',
-              data: methods.map(m => data['USPS → MNIST'].ours[m]),
-              backgroundColor: 'rgba(0,217,255,0.5)',
-              borderColor: '#00d9ff',
-              borderWidth: 1
-            }
+            { label: 'Paper Avg (%)', data: paperData, backgroundColor: 'rgba(255,179,71,0.8)', borderColor: '#ffb347', borderWidth: 1 },
+            { label: 'Ours Avg (%)', data: oursData, backgroundColor: 'rgba(123,237,159,0.8)', borderColor: '#7bed9f', borderWidth: 1 }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top' }
-          },
+          plugins: { legend: { position: 'top', labels: { color: '#e8e8e8' } } },
           scales: {
-            y: {
-              beginAtZero: true,
-              max: 80,
-              grid: { color: 'rgba(255,255,255,0.1)' },
-              ticks: { color: '#e8e8e8' }
-            },
-            x: {
-              grid: { color: 'rgba(255,255,255,0.1)' },
-              ticks: { color: '#e8e8e8' }
-            }
+            y: { beginAtZero: true, max: 80, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } },
+            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } }
           }
         }
+      });
+    }
+
+    function renderDatasetChart(canvasId, datasetName) {
+      const ctx = document.getElementById(canvasId + 'Chart');
+      if (!ctx) return;
+
+      const dataset = allData[datasetName] || {};
+      const tasks = Object.keys(dataset);
+
+      // Group by method
+      const paperData = methods.map(m => {
+        const vals = tasks.map(t => dataset[t].paper[m]).filter(v => v != null);
+        return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : 0;
+      });
+
+      const oursData = methods.map(m => {
+        const vals = tasks.map(t => dataset[t].ours[m]).filter(v => v != null);
+        return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : 0;
+      });
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: methods,
+          datasets: [
+            { label: 'Paper(%)', data: paperData, backgroundColor: 'rgba(255,179,71,0.8)', borderColor: '#ffb347', borderWidth: 1 },
+            { label: 'Ours(%)', data: oursData, backgroundColor: 'rgba(123,237,159,0.8)', borderColor: '#7bed9f', borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { color: '#e8e8e8' } } },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } },
+            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } }
+          }
+        }
+      });
+    }
+
+    function renderTable(tableId, dataset) {
+      const tbody = document.getElementById(tableId);
+      if (!tbody) return;
+
+      let html = '';
+      Object.entries(dataset).forEach(([task, vals]) => {
+        methods.forEach(m => {
+          const p = vals.paper[m];
+          const o = vals.ours[m];
+          if (p == null) return;
+
+          const diff = o != null ? (o - p).toFixed(2) : 'N/A';
+          const diffClass = o != null ? (diff >= 0 ? 'positive' : 'negative') : '';
+          const diffStr = o != null ? (diff >= 0 ? `+${diff}` : diff) : '';
+
+          html += `<tr>
+            <td class="task-name">${task}</td>
+            <td class="method">${m}</td>
+            <td class="paper">${p.toFixed(2)}</td>
+            <td class="ours">${o != null ? o.toFixed(2) : 'N/A'}</td>
+            <td class="diff ${diffClass}">${diffStr}%</td>
+          </tr>`;
+        });
+      });
+      tbody.innerHTML = html;
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).classList.add('active');
+        });
       });
     }
 
@@ -235,10 +573,6 @@
         }
       };
     }
-
-    renderTable();
-    renderChart();
-    renderQR();
   </script>
 </body>
 </html>

@@ -1,0 +1,946 @@
+{
+  "Digit": {
+    "USPS → MNIST": {
+      "paper": {
+        "NN": 44.7,
+        "PCA": 44.95,
+        "GFK": 46.45,
+        "TCA": 51.05,
+        "TSL": 53.75,
+        "JDA": 59.65
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 23.3,
+        "GFK": 24.1,
+        "TCA": 23.5,
+        "TSL": 50.5,
+        "JDA": 49.95
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 1.314,
+        "GFK": 0.679,
+        "TCA": 0.831,
+        "TSL": 2.697,
+        "JDA": 19.657
+      }
+    },
+    "MNIST → USPS": {
+      "paper": {
+        "NN": 65.94,
+        "PCA": 66.22,
+        "GFK": 67.22,
+        "TCA": 56.28,
+        "TSL": 66.06,
+        "JDA": 67.28
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 61.33,
+        "GFK": 60.67,
+        "TCA": 58.89,
+        "TSL": 55.67,
+        "JDA": 56.5
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 1.127,
+        "GFK": 2.849,
+        "TCA": 2.71,
+        "TSL": 3.288,
+        "JDA": 33.619
+      }
+    }
+  },
+  "COIL": {
+    "COIL1 → COIL2": {
+      "paper": {
+        "NN": 83.61,
+        "PCA": 84.72,
+        "GFK": 72.5,
+        "TCA": 88.47,
+        "TSL": 88.06,
+        "JDA": 89.31
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 83.33,
+        "GFK": 85.42,
+        "TCA": 73.61,
+        "TSL": 87.5,
+        "JDA": 88.61
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "COIL2 → COIL1": {
+      "paper": {
+        "NN": 82.78,
+        "PCA": 84.03,
+        "GFK": 74.17,
+        "TCA": 85.83,
+        "TSL": 87.92,
+        "JDA": 88.47
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 84.72,
+        "GFK": 85.69,
+        "TCA": 76.11,
+        "TSL": 85.42,
+        "JDA": 85.69
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    }
+  },
+  "PIE": {
+    "PIE1 → PIE2 (1)": {
+      "paper": {
+        "NN": 26.09,
+        "PCA": 24.8,
+        "GFK": 26.15,
+        "TCA": 40.76,
+        "TSL": 44.08,
+        "JDA": 58.81
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 30.82,
+        "GFK": 24.86,
+        "TCA": 26.03,
+        "TSL": 40.2,
+        "JDA": 31.74
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.225,
+        "GFK": 0.219,
+        "TCA": 0.244,
+        "TSL": 11.464,
+        "JDA": 105.094
+      }
+    },
+    "PIE1 → PIE3 (2)": {
+      "paper": {
+        "NN": 26.59,
+        "PCA": 25.18,
+        "GFK": 27.27,
+        "TCA": 41.79,
+        "TSL": 47.49,
+        "JDA": 54.23
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 33.88,
+        "GFK": 30.45,
+        "TCA": 30.58,
+        "TSL": 42.28,
+        "JDA": 35.91
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.232,
+        "GFK": 0.25,
+        "TCA": 0.291,
+        "TSL": 11.211,
+        "JDA": 118.293
+      }
+    },
+    "PIE1 → PIE4 (3)": {
+      "paper": {
+        "NN": 30.67,
+        "PCA": 29.26,
+        "GFK": 31.15,
+        "TCA": 59.63,
+        "TSL": 62.78,
+        "JDA": 84.5
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 37.73,
+        "GFK": 35.39,
+        "TCA": 35.45,
+        "TSL": 60.89,
+        "JDA": 62.3
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.308,
+        "GFK": 0.309,
+        "TCA": 0.518,
+        "TSL": 11.647,
+        "JDA": 124.34
+      }
+    },
+    "PIE1 → PIE5 (4)": {
+      "paper": {
+        "NN": 16.67,
+        "PCA": 16.3,
+        "GFK": 17.59,
+        "TCA": 29.35,
+        "TSL": 36.15,
+        "JDA": 49.75
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 13.11,
+        "GFK": 13.11,
+        "TCA": 13.73,
+        "TSL": 30.15,
+        "JDA": 24.51
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.219,
+        "GFK": 0.31,
+        "TCA": 0.451,
+        "TSL": 11.562,
+        "JDA": 126.648
+      }
+    },
+    "PIE2 → PIE1 (5)": {
+      "paper": {
+        "NN": 24.49,
+        "PCA": 24.22,
+        "GFK": 25.24,
+        "TCA": 41.81,
+        "TSL": 46.28,
+        "JDA": 57.62
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 26.05,
+        "GFK": 25.33,
+        "TCA": 26.03,
+        "TSL": 44.15,
+        "JDA": 43.61
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.263,
+        "GFK": 0.267,
+        "TCA": 0.486,
+        "TSL": 11.544,
+        "JDA": 106.304
+      }
+    },
+    "PIE2 → PIE3 (6)": {
+      "paper": {
+        "NN": 46.63,
+        "PCA": 45.53,
+        "GFK": 47.37,
+        "TCA": 51.47,
+        "TSL": 57.6,
+        "JDA": 62.93
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 53.86,
+        "GFK": 46.57,
+        "TCA": 48.84,
+        "TSL": 51.29,
+        "JDA": 53.06
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.197,
+        "GFK": 0.193,
+        "TCA": 0.21,
+        "TSL": 11.883,
+        "JDA": 117.624
+      }
+    },
+    "PIE2 → PIE4 (7)": {
+      "paper": {
+        "NN": 54.07,
+        "PCA": 53.35,
+        "GFK": 54.25,
+        "TCA": 64.73,
+        "TSL": 71.43,
+        "JDA": 75.82
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 49.71,
+        "GFK": 49.62,
+        "TCA": 51.97,
+        "TSL": 68.97,
+        "JDA": 66.96
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 0.256,
+        "GFK": 0.431,
+        "TCA": 0.43,
+        "TSL": 11.437,
+        "JDA": 122.661
+      }
+    },
+    "PIE2 → PIE5 (8)": {
+      "paper": {
+        "NN": 26.53,
+        "PCA": 25.43,
+        "GFK": 27.08,
+        "TCA": 33.7,
+        "TSL": 35.66,
+        "JDA": 39.89
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 31.07,
+        "GFK": 25.86,
+        "TCA": 27.08,
+        "TSL": 33.46,
+        "JDA": 35.66
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 2.262,
+        "GFK": 0.7125,
+        "TCA": 0.15,
+        "TSL": 4.5875,
+        "JDA": 212.95
+      }
+    },
+    "PIE3 → PIE1 (9)": {
+      "paper": {
+        "NN": 21.37,
+        "PCA": 20.95,
+        "GFK": 21.82,
+        "TCA": 34.69,
+        "TSL": 36.94,
+        "JDA": 50.96
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 22.69,
+        "GFK": 20.62,
+        "TCA": 21.04,
+        "TSL": 34.9,
+        "JDA": 37.0
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 1.807,
+        "GFK": 0.1,
+        "TCA": 0.2,
+        "TSL": 1.9,
+        "JDA": 20.0
+      }
+    },
+    "PIE3 → PIE2 (10)": {
+      "paper": {
+        "NN": 41.01,
+        "PCA": 40.45,
+        "GFK": 43.16,
+        "TCA": 47.7,
+        "TSL": 47.02,
+        "JDA": 57.95
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 36.96,
+        "GFK": 37.92,
+        "TCA": 39.41,
+        "TSL": 43.59,
+        "JDA": 42.97
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": 1.495,
+        "GFK": 0.1,
+        "TCA": 0.3,
+        "TSL": 3.2,
+        "JDA": 76.3
+      }
+    },
+    "PIE3 → PIE4 (11)": {
+      "paper": {
+        "NN": 46.53,
+        "PCA": 46.14,
+        "GFK": 46.41,
+        "TCA": 56.23,
+        "TSL": 59.45,
+        "JDA": 68.45
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 46.26,
+        "GFK": 46.14,
+        "TCA": 46.29,
+        "TSL": 56.41,
+        "JDA": 59.66
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 0.1,
+        "TCA": 0.3,
+        "TSL": 5.7,
+        "JDA": 80.8
+      }
+    },
+    "PIE3 → PIE5 (12)": {
+      "paper": {
+        "NN": 26.23,
+        "PCA": 25.31,
+        "GFK": 26.78,
+        "TCA": 33.15,
+        "TSL": 36.34,
+        "JDA": 39.95
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 20.89,
+        "GFK": 20.34,
+        "TCA": 23.47,
+        "TSL": 30.94,
+        "JDA": 30.58
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 1.3,
+        "TCA": 2.2,
+        "TSL": 98.6,
+        "JDA": 500.4
+      }
+    },
+    "PIE4 → PIE1 (13)": {
+      "paper": {
+        "NN": 32.95,
+        "PCA": 31.96,
+        "GFK": 34.24,
+        "TCA": 55.64,
+        "TSL": 63.66,
+        "JDA": 80.58
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 31.9,
+        "GFK": 31.36,
+        "TCA": 33.13,
+        "TSL": 55.67,
+        "JDA": 855.67
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 1.8,
+        "TCA": 2.425,
+        "TSL": 56.2,
+        "JDA": 1166.725
+      }
+    },
+    "PIE4 → PIE2 (14)": {
+      "paper": {
+        "NN": 62.68,
+        "PCA": 60.96,
+        "GFK": 62.92,
+        "TCA": 67.83,
+        "TSL": 72.68,
+        "JDA": 82.63
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 69.49,
+        "GFK": 59.12,
+        "TCA": 63.66,
+        "TSL": 63.72,
+        "JDA": 61.94
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 2.05,
+        "TCA": 1.925,
+        "TSL": 45.475,
+        "JDA": 1105.725
+      }
+    },
+    "PIE4 → PIE3 (15)": {
+      "paper": {
+        "NN": 73.22,
+        "PCA": 72.18,
+        "GFK": 73.35,
+        "TCA": 75.86,
+        "TSL": 83.52,
+        "JDA": 87.25
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 78.49,
+        "GFK": 71.63,
+        "TCA": 72.61,
+        "TSL": 74.69,
+        "JDA": 72.37
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 0.5,
+        "TCA": 0.6,
+        "TSL": 4.0,
+        "JDA": 99.8
+      }
+    },
+    "PIE4 → PIE5 (16)": {
+      "paper": {
+        "NN": 37.19,
+        "PCA": 35.11,
+        "GFK": 37.38,
+        "TCA": 40.26,
+        "TSL": 44.79,
+        "JDA": 54.66
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 38.17,
+        "GFK": 34.8,
+        "TCA": 36.64,
+        "TSL": 39.4,
+        "JDA": 39.52
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 0.7,
+        "TCA": 0.1,
+        "TSL": 0.9,
+        "JDA": 103.7
+      }
+    },
+    "PIE5 → PIE1 (17)": {
+      "paper": {
+        "NN": 18.49,
+        "PCA": 18.85,
+        "GFK": 20.35,
+        "TCA": 26.98,
+        "TSL": 33.28,
+        "JDA": 46.46
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 14.2,
+        "GFK": 14.32,
+        "TCA": 15.55,
+        "TSL": 26.98,
+        "JDA": 33.28
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 0.3,
+        "TCA": 0.2,
+        "TSL": 1.1,
+        "JDA": 47.8
+      }
+    },
+    "PIE5 → PIE2 (18)": {
+      "paper": {
+        "NN": 24.19,
+        "PCA": 23.39,
+        "GFK": 24.62,
+        "TCA": 29.9,
+        "TSL": 34.13,
+        "JDA": 42.05
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 29.59,
+        "GFK": 23.57,
+        "TCA": 23.51,
+        "TSL": 30.02,
+        "JDA": 32.11
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 1.0,
+        "TCA": 1.3,
+        "TSL": 106.0,
+        "JDA": 419.1
+      }
+    },
+    "PIE5 → PIE3 (19)": {
+      "paper": {
+        "NN": 28.31,
+        "PCA": 27.21,
+        "GFK": 28.49,
+        "TCA": 29.9,
+        "TSL": 36.58,
+        "JDA": 53.31
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 32.41,
+        "GFK": 27.45,
+        "TCA": 28.86,
+        "TSL": 29.9,
+        "JDA": 31.99
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 1.4,
+        "TCA": null,
+        "TSL": 96.3,
+        "JDA": 465.2
+      }
+    },
+    "PIE5 → PIE4 (20)": {
+      "paper": {
+        "NN": 31.24,
+        "PCA": 30.34,
+        "GFK": 31.33,
+        "TCA": 33.64,
+        "TSL": 38.75,
+        "JDA": 57.01
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 26.73,
+        "GFK": 26.67,
+        "TCA": 29.14,
+        "TSL": 33.79,
+        "JDA": 36.08
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": 1.7,
+        "TCA": 4.3,
+        "TSL": 110.9,
+        "JDA": 581.1
+      }
+    }
+  },
+  "SURF/Office": {
+    "C → A (1)": {
+      "paper": {
+        "NN": 23.7,
+        "PCA": 36.95,
+        "GFK": 41.02,
+        "TCA": 38.2,
+        "TSL": 44.47,
+        "JDA": 44.78
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 23.7,
+        "GFK": 36.85,
+        "TCA": 40.61,
+        "TSL": 39.14,
+        "JDA": 45.51
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "C → W (2)": {
+      "paper": {
+        "NN": 25.76,
+        "PCA": 32.54,
+        "GFK": 40.68,
+        "TCA": 38.64,
+        "TSL": 34.24,
+        "JDA": 41.69
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 25.76,
+        "GFK": 31.19,
+        "TCA": 39.32,
+        "TSL": 38.64,
+        "JDA": 35.25
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "C → D (3)": {
+      "paper": {
+        "NN": 25.48,
+        "PCA": 38.22,
+        "GFK": 38.85,
+        "TCA": 41.4,
+        "TSL": 43.31,
+        "JDA": 45.22
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 25.48,
+        "GFK": 39.49,
+        "TCA": 36.94,
+        "TSL": 41.4,
+        "JDA": 44.59
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "A → C (4)": {
+      "paper": {
+        "NN": 26.0,
+        "PCA": 34.73,
+        "GFK": 40.25,
+        "TCA": 37.76,
+        "TSL": 37.58,
+        "JDA": 39.36
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 26.0,
+        "GFK": 33.04,
+        "TCA": 40.07,
+        "TSL": 37.85,
+        "JDA": 39.45
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "A → W (5)": {
+      "paper": {
+        "NN": 29.83,
+        "PCA": 35.59,
+        "GFK": 38.98,
+        "TCA": 37.63,
+        "TSL": 33.9,
+        "JDA": 37.97
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 29.83,
+        "GFK": 35.59,
+        "TCA": 37.63,
+        "TSL": 38.98,
+        "JDA": 35.59
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "A → D (6)": {
+      "paper": {
+        "NN": 25.48,
+        "PCA": 27.39,
+        "GFK": 36.31,
+        "TCA": 33.12,
+        "TSL": 26.11,
+        "JDA": 39.49
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 25.48,
+        "GFK": 28.03,
+        "TCA": 36.31,
+        "TSL": 33.12,
+        "JDA": 30.57
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "W → C (7)": {
+      "paper": {
+        "NN": 19.86,
+        "PCA": 26.36,
+        "GFK": 30.72,
+        "TCA": 29.3,
+        "TSL": 29.83,
+        "JDA": 31.17
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 19.86,
+        "GFK": 26.18,
+        "TCA": 29.83,
+        "TSL": 29.39,
+        "JDA": 29.3
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "W → A (8)": {
+      "paper": {
+        "NN": 22.96,
+        "PCA": 31.0,
+        "GFK": 29.75,
+        "TCA": 30.06,
+        "TSL": 30.27,
+        "JDA": 32.78
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 22.96,
+        "GFK": 30.9,
+        "TCA": 29.85,
+        "TSL": 30.9,
+        "JDA": 30.27
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "W → D (9)": {
+      "paper": {
+        "NN": 59.24,
+        "PCA": 77.07,
+        "GFK": 80.89,
+        "TCA": 87.26,
+        "TSL": 87.26,
+        "JDA": 89.17
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 59.24,
+        "GFK": 75.16,
+        "TCA": 81.53,
+        "TSL": 87.26,
+        "JDA": 87.26
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "D → C (10)": {
+      "paper": {
+        "NN": 26.27,
+        "PCA": 29.65,
+        "GFK": 30.28,
+        "TCA": 31.7,
+        "TSL": 28.5,
+        "JDA": 31.52
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 26.27,
+        "GFK": 30.01,
+        "TCA": 29.83,
+        "TSL": 31.88,
+        "JDA": 28.41
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "D → A (11)": {
+      "paper": {
+        "NN": 28.5,
+        "PCA": 32.05,
+        "GFK": 32.05,
+        "TCA": 32.15,
+        "TSL": 27.56,
+        "JDA": 33.09
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 28.5,
+        "GFK": 30.58,
+        "TCA": 32.36,
+        "TSL": 31.52,
+        "JDA": 29.85
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    },
+    "D → W (12)": {
+      "paper": {
+        "NN": 63.39,
+        "PCA": 75.93,
+        "GFK": 75.59,
+        "TCA": 86.1,
+        "TSL": 89.49,
+        "JDA": 89.49
+      },
+      "ours": {
+        "NN": null,
+        "PCA": 63.39,
+        "GFK": 67.46,
+        "TCA": 74.92,
+        "TSL": 85.76,
+        "JDA": 89.49
+      },
+      "runtime": {
+        "NN": null,
+        "PCA": null,
+        "GFK": null,
+        "TCA": null,
+        "TSL": null,
+        "JDA": null
+      }
+    }
+  }
+}

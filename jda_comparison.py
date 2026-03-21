@@ -185,14 +185,22 @@ class TCA:
         a = (a + a.T) / 2
         b = (b + b.T) / 2
 
-        w, V = scipy.linalg.eig(a, b)
+        # Ensure symmetry
+        a = (a + a.T) / 2
+        b = (b + b.T) / 2
+
+        # Use pinv(b) @ a for generalized eigenvalue problem (matching tune_parameters.py)
+        try:
+            w, V = scipy.linalg.eig(np.linalg.pinv(b) @ a)
+        except:
+            w, V = scipy.linalg.eig(a, b)
         w = np.real(w)
         V = np.real(V)
         ind = np.argsort(w)
         A = V[:, ind[:self.dim]]
         Z = A.T @ K
         Z = np.real(Z)
-        Z /= np.linalg.norm(Z, axis=0)
+        Z /= np.linalg.norm(Z, axis=0) + 1e-12  # Add epsilon for numerical stability
         Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
 
         clf = KNeighborsClassifier(n_neighbors=1)
@@ -444,6 +452,7 @@ class JDA:
         H = np.eye(n) - 1/n * np.ones((n, n))
 
         Y_tar_pseudo = None
+        A = None  # Add PCA initialization (matching tune_parameters.py)
 
         for t in range(self.T):
             N = np.zeros((n, n))
@@ -467,20 +476,30 @@ class JDA:
             M = M0 + N
 
             K = X
+            # Initialize with PCA on first iteration (matching tune_parameters.py)
+            if A is None:
+                pca = PCA(n_components=min(self.dim, m))
+                pca.fit(X.T)
+                A = pca.components_.T
+
             a = np.linalg.multi_dot([K, M, K.T]) + self.lamb * np.eye(m)
             b = np.linalg.multi_dot([K, H, K.T]) + 1e-6 * np.eye(m)
 
             a = (a + a.T) / 2
             b = (b + b.T) / 2
 
-            w, V = scipy.linalg.eig(a, b)
+            # Use pinv(b) @ a for generalized eigenvalue problem (matching tune_parameters.py)
+            try:
+                w, V = scipy.linalg.eig(np.linalg.pinv(b) @ a)
+            except:
+                w, V = scipy.linalg.eig(a, b)
             w = np.real(w)
             V = np.real(V)
             ind = np.argsort(w)
             A = V[:, ind[:self.dim]]
             Z = A.T @ K
             Z = np.real(Z)
-            Z /= np.linalg.norm(Z, axis=0)
+            Z /= np.linalg.norm(Z, axis=0) + 1e-12  # Add epsilon for numerical stability
             Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
 
             clf = KNeighborsClassifier(n_neighbors=1)

@@ -759,6 +759,66 @@ def tune_jda(Xs, Ys, Xt, Yt, k_values, lamb_values, target_acc=None, workers=1, 
     return best_params, best_acc, runtime / total
 
 
+# ============== Customizable Parameter Ranges ==============
+# Override these before running or use command line arguments
+
+# Default: tune all methods
+TUNE_NN = True
+TUNE_PCA = True
+TUNE_GFK = True
+TUNE_TCA = True
+TUNE_TSL = True
+TUNE_JDA = True
+
+# Custom parameter ranges (None = use default)
+CUSTOM_K_RANGE = None  # e.g., [20, 50, 75, 100]
+CUSTOM_LAMBDA_RANGE = None  # e.g., [0.01, 0.1, 1.0]
+
+
+def set_parameter_ranges(k_range=None, lambda_range=None):
+    """Set custom parameter search ranges."""
+    global CUSTOM_K_RANGE, CUSTOM_LAMBDA_RANGE
+    CUSTOM_K_RANGE = k_range
+    CUSTOM_LAMBDA_RANGE = lambda_range
+    print(f"Custom ranges set: k={k_range}, lambda={lambda_range}")
+
+
+def get_k_range(method, custom_range=None):
+    """Get k (dimension) range for a method.
+
+    Args:
+        method: The method name
+        custom_range: Optional custom range to use (overrides global)
+    """
+    if custom_range is not None:
+        return custom_range
+    if CUSTOM_K_RANGE is not None:
+        return CUSTOM_K_RANGE
+    # Default ranges
+    if method in ["pca", "gfk", "tca"]:
+        return K_VALUES_LARGE  # [10, 20, ..., 200]
+    else:  # tsl, jda
+        return K_VALUES_SMALL  # [10, 20, ..., 150]
+
+
+def get_lambda_range(dataset, custom_range=None):
+    """Get lambda range for a method.
+
+    Args:
+        dataset: The dataset name
+        custom_range: Optional custom range to use (overrides global)
+    """
+    if custom_range is not None:
+        return custom_range
+    if CUSTOM_LAMBDA_RANGE is not None:
+        return CUSTOM_LAMBDA_RANGE
+    # Default ranges
+    if dataset == "surf":
+        return [0.01, 0.1, 1.0, 10.0]
+    else:
+        return LAMBDA_VALUES  # [0.01, 0.1, 1.0]
+
+
 # ============== Main ==============
 def main():
     parser = argparse.ArgumentParser(description="Parameter tuning for JDA methods")
@@ -766,12 +826,37 @@ def main():
     parser.add_argument("--src", type=str, required=True, help="Source domain name")
     parser.add_argument("--tar", type=str, required=True, help="Target domain name")
     parser.add_argument("--data-dir", type=str, default="data", help="Data directory")
-    parser.add_argument("--methods", type=str, default="all", help="Methods: all or comma-separated (pca,gfk,tca,tsl,jda)")
+    parser.add_argument("--methods", type=str, default=None, help="Methods: all or comma-separated (nn,pca,gfk,tca,tsl,jda)")
     parser.add_argument("--compare-paper", action="store_true", help="Compare results with original paper")
     parser.add_argument("--output", type=str, default=None, help="Output CSV file")
     parser.add_argument("--parallel", action="store_true", help="Run parameter search in parallel")
     parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
+    parser.add_argument("--k-range", type=str, default=None, help="Custom k values for grid search, e.g., '20,50,75,100'")
+    parser.add_argument("--lambda-range", type=str, default=None, help="Custom lambda values for grid search, e.g., '0.01,0.1,1.0'")
+    parser.add_argument("--fixed-params", type=str, default=None, help="Fixed params: 'pca=20,tca=100,jda=75,lambda=0.1' (overrides grid search)")
     args = parser.parse_args()
+
+    # Parse fixed parameters if provided
+    fixed_params = {}
+    if args.fixed_params:
+        for item in args.fixed_params.split(','):
+            if '=' in item:
+                key, val = item.split('=')
+                key = key.strip().lower()
+                val = val.strip()
+                if key == 'lambda':
+                    fixed_params['lambda'] = float(val)
+                else:
+                    fixed_params[key] = int(val)
+        print(f"Fixed parameters: {fixed_params}")
+
+    # Parse custom parameter ranges
+    if args.k_range:
+        CUSTOM_K_RANGE = [int(x.strip()) for x in args.k_range.split(',')]
+        print(f"Using custom k range: {CUSTOM_K_RANGE}")
+    if args.lambda_range:
+        CUSTOM_LAMBDA_RANGE = [float(x.strip()) for x in args.lambda_range.split(',')]
+        print(f"Using custom lambda range: {CUSTOM_LAMBDA_RANGE}")
 
     verbose = True  # Enable verbose output
 
@@ -785,17 +870,19 @@ def main():
     Xs, Ys, Xt, Yt = load_preset_data(args.dataset, args.src, args.tar, args.data_dir)
     print(f"  Source: {Xs.shape}, Target: {Xt.shape}")
 
-    # Determine lambda range based on dataset
-    if args.dataset == "surf":
-        lamb_values = [0.01, 0.1, 1.0, 10.0]  # Skip 100 for speed
+    # Get lambda range (use fixed lambda if provided, otherwise use custom or default)
+    if fixed_params and 'lambda' in fixed_params:
+        lamb_values = [fixed_params['lambda']]
     else:
-        lamb_values = LAMBDA_VALUES
+        lamb_values = get_lambda_range(args.dataset, custom_range=CUSTOM_LAMBDA_RANGE)
+    print(f"  Lambda range: {lamb_values}")
 
     # Parse methods
-    if args.methods == "all":
-        methods = ["pca", "gfk", "tca", "tsl", "jda"]
+    if args.methods is None:
+        methods = ["nn", "pca", "gfk", "tca", "tsl", "jda"]
     else:
         methods = [m.strip().lower() for m in args.methods.split(',')]
+    print(f"  Methods to tune: {methods}")
 
     results = {}
     start_time = time.time()
@@ -816,6 +903,14 @@ def main():
         if args.compare_paper and paper_data:
             target_acc = paper_data.get(method.upper(), None)
 
+        # Get method-specific k range
+        # Use fixed params if provided, otherwise use custom range from command line
+        if fixed_params and method in fixed_params:
+            k_range = [fixed_params[method]]  # Fixed k for this method
+        else:
+            custom_k = CUSTOM_K_RANGE if 'CUSTOM_K_RANGE' in dir() else None
+            k_range = get_k_range(method, custom_range=custom_k)
+
         if method == "nn":
             if verbose:
                 print(f"\n  Running NN (baseline)...")
@@ -824,7 +919,7 @@ def main():
             runtime = time.time() - start
             results["NN"] = {"params": {}, "acc": acc, "runtime": runtime}
             if verbose:
-                print(f"    NN: {acc:.2f}%, AvgTime={avg_time:.3f}s")
+                print(f"    NN: {acc:.2f}%, Time={runtime:.3f}s")
             continue
 
         if verbose:
@@ -834,20 +929,47 @@ def main():
                 print(f"\n  Tuning {method.upper()} (sequential)...")
 
         try:
+            # Use fixed params if provided, otherwise do grid search
             if method == "pca":
-                params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, K_VALUES_LARGE, target_acc=target_acc, workers=use_workers)
+                fixed_k = fixed_params.get('pca', None)
+                if fixed_k:
+                    print(f"    Running PCA with fixed k={fixed_k}")
+                    start = time.time()
+                    acc = run_pca(Xs, Ys, Xt, Yt, fixed_k)
+                    runtime = time.time() - start
+                    params = {"k": fixed_k}
+                else:
+                    params, acc, runtime = tune_pca(Xs, Ys, Xt, Yt, k_range, target_acc=target_acc, workers=use_workers)
                 results["PCA"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "gfk":
-                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, K_VALUES_LARGE, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_gfk(Xs, Ys, Xt, Yt, k_range, target_acc=target_acc, workers=use_workers)
                 results["GFK"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "tca":
-                params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, K_VALUES_LARGE, lamb_values, target_acc=target_acc, workers=use_workers)
+                fixed_k = fixed_params.get('tca', None)
+                fixed_lamb = fixed_params.get('lambda', None)
+                if fixed_k and fixed_lamb:
+                    print(f"    Running TCA with fixed k={fixed_k}, lamb={fixed_lamb}")
+                    start = time.time()
+                    acc = run_tca(Xs, Ys, Xt, Yt, fixed_k, fixed_lamb)
+                    runtime = time.time() - start
+                    params = {"k": fixed_k, "lamb": fixed_lamb}
+                else:
+                    params, acc, runtime = tune_tca(Xs, Ys, Xt, Yt, k_range, lamb_values, target_acc=target_acc, workers=use_workers)
                 results["TCA"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "tsl":
-                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, K_VALUES_SMALL, lamb_values, target_acc=target_acc, workers=use_workers)
+                params, acc, runtime = tune_tsl(Xs, Ys, Xt, Yt, k_range, lamb_values, target_acc=target_acc, workers=use_workers)
                 results["TSL"] = {"params": params, "acc": acc, "runtime": runtime}
             elif method == "jda":
-                params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, K_VALUES_SMALL, lamb_values, target_acc=target_acc, workers=use_workers)
+                fixed_k = fixed_params.get('jda', None)
+                fixed_lamb = fixed_params.get('lambda', None)
+                if fixed_k and fixed_lamb:
+                    print(f"    Running JDA with fixed k={fixed_k}, lamb={fixed_lamb}")
+                    start = time.time()
+                    acc = run_jda(Xs, Ys, Xt, Yt, fixed_k, fixed_lamb, T=JDA_ITERS)
+                    runtime = time.time() - start
+                    params = {"k": fixed_k, "lamb": fixed_lamb}
+                else:
+                    params, acc, runtime = tune_jda(Xs, Ys, Xt, Yt, k_range, lamb_values, target_acc=target_acc, workers=use_workers)
                 results["JDA"] = {"params": params, "acc": acc, "runtime": runtime}
         except Exception as e:
             print(f"Error in {method}: {e}")

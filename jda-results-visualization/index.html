@@ -215,7 +215,7 @@
     .figure-grid-4 {
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
-    /* Fig5: ab 一行两列，cd 下一行两列 */
+    /* Fig5: ab in one row, two columns; cd in next row, two columns */
     .figure-grid-fig5 {
       grid-template-columns: 1fr 1fr;
       gap: 1.5rem;
@@ -354,7 +354,6 @@
             Your browser does not support video playback
           </video>
         </div>
-        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.7;">若无法播放，请将 <code>Script_JDA_Introduction.mp4</code> 放置于本目录</p>
       </section>
 
       <!-- Quick Results -->
@@ -431,7 +430,7 @@
     <div id="results" class="page-section">
       <section>
         <h2>Experimental Results - Accuracy Comparison</h2>
-        <p style="margin-bottom: 1rem; opacity: 0.9;">各列格式：Ours (Paper)，即复现结果（论文报告值）。</p>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">Format: Ours (Paper), showing reproduction results (paper reported values).</p>
 
         <div class="stats-summary" id="statsSummary">
           <div class="stat-box">
@@ -477,10 +476,10 @@
 
       <section>
         <h2>Figure 3 - Cross-Domain Accuracy Overview</h2>
-        <p style="margin-bottom: 1rem; opacity: 0.9;">四类数据集（Digit、COIL、PIE、SURF/Office）共 36 个跨域图像任务在各方法下的准确率，体现不同迁移难度下的知识适配表现。</p>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">Accuracy on 36 cross-domain image tasks across 4 dataset types (Digit, COIL, PIE, SURF/Office), demonstrating knowledge adaptation under different transfer difficulties.</p>
         <div class="figure-grid">
           <div class="figure-item">
-            <img src="./figures/3result.png" alt="Accuracy on 36 cross-domain tasks" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22%3EFigure 3 (place figures/3result.png)%3C/text%3E%3C/svg%3E';">
+            <img src="./figures/Figure3.png" alt="Accuracy on 36 cross-domain tasks" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22%3EFigure 3 (place figures/Figure3.png)%3C/text%3E%3C/svg%3E';">
             <p class="figure-caption">Accuracy (%) on 4 types of 36 cross-domain image datasets</p>
           </div>
         </div>
@@ -488,7 +487,7 @@
 
       <section>
         <h2>Figure 4 - Effectiveness Verification</h2>
-        <p style="margin-bottom: 1rem; opacity: 0.9;">PIE1→PIE2 任务：Accuracy 与 MMD Distance 随迭代次数变化（数据来自 fig4_results.csv）</p>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">PIE1→PIE2 task: Accuracy and MMD Distance vs number of iterations (data from fig4_results.csv)</p>
         <div class="figure-grid">
           <div class="figure-item">
             <h4 style="margin-bottom: 0.5rem; color: #7bed9f;">(a) Accuracy vs #Iterations</h4>
@@ -540,7 +539,7 @@
     <div id="comparison" class="page-section">
       <section>
         <h2>Method Comparison by Dataset Type</h2>
-        <p style="margin-bottom: 1rem; opacity: 0.9;">数据来源：内嵌的 36 个跨域任务结果（论文报告值 Paper + 复现结果 Ours），详见 <code>data.json</code> / <code>_embedded_data.txt</code>。</p>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">Data source: Embedded 36 cross-domain task results (Paper reported values + Ours reproduction results), see <code>data.json</code> / <code>_embedded_data.txt</code> for details.</p>
         <div class="comparison-grid">
           <div>
             <h3>Average Accuracy by Method</h3>
@@ -559,7 +558,7 @@
 
       <section>
         <h2>JDA: Ours vs Paper</h2>
-        <p style="margin-bottom: 1rem; opacity: 0.9;">对比复现 JDA 与论文报告的 JDA 准确率，差值 = Ours − Paper。</p>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">Comparing reproduced JDA with paper-reported JDA accuracy, difference = Ours − Paper.</p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -606,7 +605,7 @@
             </table>
 
             <h3 style="margin-top: 1.5rem;">GitHub Repository</h3>
-            <p><a href="https://github.com/caroline1677/COMP7404-Group16-JDA-Reproduction/tree/visualization/jda-results-visualization" target="_blank" style="color: #00d9ff;">COMP7404-Group16-JDA-Reproduction (visualization 分支)</a></p>
+            <p><a href="https://github.com/caroline1677/COMP7404-Group16-JDA-Reproduction/tree/visualization/jda-results-visualization" target="_blank" style="color: #00d9ff;">COMP7404-Group16-JDA-Reproduction (visualization branch)</a></p>
           </div>
         </div>
       </section>
@@ -760,7 +759,7 @@
       });
     }
 
-    // Results Table: one row per task, 列顺序严格对应 methods = NN, PCA, GFK, TCA, TSL, JDA
+    // Results Table: one row per task, column order strictly follows methods = NN, PCA, GFK, TCA, TSL, JDA
     function renderResultsTable(data) {
       const tbody = document.getElementById('resultsBody');
       let html = '';

@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JDA Paper Reproduction - COMP7404 Group16</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e8e8e8;
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+    /* Navigation */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo { font-size: 1.3rem; font-weight: bold; color: #00d9ff; }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: #e8e8e8;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    .nav-links a:hover, .nav-links a.active { background: rgba(0,217,255,0.2); color: #00d9ff; }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      margin-bottom: 2rem;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #00d9ff, #7bed9f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero .subtitle {
+      font-size: 1.3rem;
+      opacity: 0.9;
+      margin-bottom: 1.5rem;
+    }
+    .hero .team {
+      font-size: 1rem;
+      opacity: 0.8;
+      margin-bottom: 2rem;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .metric-card {
+      background: rgba(0,217,255,0.1);
+      padding: 1.2rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0,217,255,0.3);
+    }
+    .metric-value { font-size: 2rem; font-weight: bold; color: #00d9ff; }
+    .metric-label { font-size: 0.9rem; opacity: 0.8; margin-top: 0.3rem; }
+
+    /* Sections */
+    section {
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #00d9ff;
+      border-bottom: 2px solid rgba(0,217,255,0.3);
+      padding-bottom: 0.5rem;
+    }
+    h3 { font-size: 1.2rem; margin-bottom: 1rem; color: #7bed9f; }
+
+    /* Video Section */
+    .video-container {
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    video { width: 100%; display: block; }
+
+    /* Paper Introduction */
+    .paper-content { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    @media (max-width: 900px) { .paper-content { grid-template-columns: 1fr; } }
+
+    .formula-box {
+      background: rgba(0,0,0,0.3);
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin: 1rem 0;
+      text-align: center;
+      font-family: 'Times New Roman', serif;
+      font-size: 1.1rem;
+    }
+    .key-points {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .key-point {
+      background: rgba(0,217,255,0.1);
+      padding: 1rem;
+      border-radius: 10px;
+      border-left: 4px solid #00d9ff;
+    }
+    .key-point h4 { color: #00d9ff; margin-bottom: 0.5rem; font-size: 1rem; }
+    .key-point p { font-size: 0.9rem; margin: 0; opacity: 0.9; }
+
+    /* Algorithm Flow */
+    .algo-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+    }
+    .algo-step {
+      background: rgba(0,217,255,0.2);
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .algo-arrow { color: #00d9ff; font-size: 1.2rem; }
+
+    /* Filter Buttons */
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      color: #e8e8e8;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(0,217,255,0.3);
+      border-color: #00d9ff;
+    }
+
+    /* Results Table */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td { padding: 0.8rem 0.5rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th {
+      background: rgba(0,217,255,0.15);
+      color: #00d9ff;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    th:hover { background: rgba(0,217,255,0.25); }
+    .task-name { text-align: left; font-weight: 500; }
+    .method-col { min-width: 60px; }
+    .paper { color: #ffb347; }
+    .ours { color: #7bed9f; }
+    .best { background: rgba(123,237,159,0.15); }
+    .diff { font-size: 0.85rem; }
+    .diff.positive { color: #7bed9f; }
+    .diff.negative { color: #ff6b6b; }
+
+    /* Charts */
+    .chart-container { height: 400px; margin: 1.5rem 0; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Figures */
+    .figure-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 1.5rem;
+    }
+    .figure-grid-4 {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+    /* Fig5: ab 一行两列，cd 下一行两列 */
+    .figure-grid-fig5 {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .figure-grid-fig5 .figure-item { min-width: 0; }
+    @media (max-width: 700px) { .figure-grid-fig5 { grid-template-columns: 1fr; } }
+    .figure-item {
+      background: rgba(0,0,0,0.2);
+      padding: 1rem;
+      border-radius: 12px;
+    }
+    .figure-item img { width: 100%; border-radius: 8px; }
+    .figure-caption {
+      text-align: center;
+      margin-top: 0.8rem;
+      color: #00d9ff;
+      font-weight: 500;
+    }
+
+    /* Comparison Section */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 900px) { .comparison-grid { grid-template-columns: 1fr; } }
+    .radar-container { height: 350px; }
+
+    /* Stats Summary */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.05);
+      padding: 1rem;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .stat-box .value { font-size: 1.5rem; font-weight: bold; color: #00d9ff; }
+    .stat-box .label { font-size: 0.85rem; opacity: 0.8; }
+    .paper-val { font-size: 0.85em; opacity: 0.75; color: #aaa; }
+
+    /* About Section */
+    .about-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 900px) { .about-content { grid-template-columns: 1fr; } }
+
+    /* QR Section */
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+    }
+    #qrcode { background: #fff; padding: 12px; border-radius: 8px; }
+    .qr-url { font-size: 0.85rem; word-break: break-all; color: #00d9ff; }
+    #downloadQr {
+      padding: 0.6rem 1.2rem;
+      background: #00d9ff; color: #1a1a2e; border: none;
+      border-radius: 6px; cursor: pointer; font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      opacity: 0.6;
+      font-size: 0.9rem;
+    }
+
+    /* Page sections */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    @media (max-width: 768px) {
+      .charts-grid, .figure-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.8rem; }
+      nav { flex-direction: column; gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-logo">JDA Reproduction</div>
+    <div class="nav-links">
+      <a href="#" class="active" data-page="home">Home</a>
+      <a href="#" data-page="overview">Overview</a>
+      <a href="#" data-page="results">Results</a>
+      <a href="#" data-page="comparison">Comparison</a>
+      <a href="#" data-page="about">About</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- HOME PAGE -->
+    <div id="home" class="page-section active">
+      <!-- Hero -->
+      <div class="hero">
+        <h1>Joint Distribution Adaptation</h1>
+        <p class="subtitle">Transfer Feature Learning with Joint Distribution Adaptation</p>
+        <p class="team">COMP7404 Group16 | Quziqi, He Qing, Lu Zhihua, Liu Zhengyang</p>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-value">36</div>
+            <div class="metric-label">Cross-domain Tasks</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">6</div>
+            <div class="metric-label">Methods Compared</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">4</div>
+            <div class="metric-label">Datasets</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" id="heroJdaDiff">-</div>
+            <div class="metric-label">JDA Ours − Paper</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video -->
+      <section>
+        <h2>Paper Introduction Video</h2>
+        <div class="video-container">
+          <video controls playsinline>
+            <source src="./Script_JDA_Introduction.mp4" type="video/mp4">
+            Your browser does not support video playback
+          </video>
+        </div>
+        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.7;">若无法播放，请将 <code>Script_JDA_Introduction.mp4</code> 放置于本目录</p>
+      </section>
+
+      <!-- Quick Results -->
+      <section>
+        <h2>Quick Results Overview</h2>
+        <div class="chart-container">
+          <canvas id="heroChart"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <!-- OVERVIEW PAGE -->
+    <div id="overview" class="page-section">
+      <section>
+        <h2>About JDA</h2>
+        <div class="paper-content">
+          <div>
+            <h3>Problem Statement</h3>
+            <p>Domain adaptation aims to learn effective classifiers for target domains with only labeled source data. The key challenge is that source and target domains often have different distributions.</p>
+
+            <div class="formula-box">
+              <strong>JDA Objective:</strong><br>
+              min<sub>A</sub> Σ<sub>c=0</sub> tr(A<sup>T</sup>X M<sub>c</sub>X<sup>T</sup>A) + λ‖A‖²<br>
+              s.t. A<sup>T</sup>XHX<sup>T</sup>A = I
+            </div>
+
+            <p>Where M<sub>0</sub> is the marginal distribution MMD and M<sub>c</sub> (c>0) are conditional distribution MMDs.</p>
+          </div>
+
+          <div>
+            <h3>Key Contributions</h3>
+            <div class="key-points">
+              <div class="key-point">
+                <h4>Joint Adaptation</h4>
+                <p>Simultaneously adapts both marginal P(X<sub>s</sub>) ≈ P(X<sub>t</sub>) and conditional P(Y|X<sub>s</sub>) ≈ P(Y|X<sub>t</sub>) distributions</p>
+              </div>
+              <div class="key-point">
+                <h4>Iterative Refinement</h4>
+                <p>Uses pseudo-labels to iteratively improve conditional distribution adaptation</p>
+              </div>
+              <div class="key-point">
+                <h4>Feature Transformation</h4>
+                <p>Learns optimal projection A such that Z = A<sup>T</sup>X minimizes domain discrepancy</p>
+              </div>
+              <div class="key-point">
+                <h4>Comprehensive Results</h4>
+                <p>Outperforms state-of-the-art methods on digit recognition, object classification, and face recognition</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Algorithm Flow</h2>
+        <div class="algo-flow">
+          <span class="algo-step">Input Data (X<sub>s</sub>, Y<sub>s</sub>, X<sub>t</sub>)</span>
+          <span class="algo-arrow">→</span>
+          <span class="algo-step">PCA</span>
+          <span class="algo-arrow">→</span>
+          <span class="algo-step">Marginal MMD</span>
+          <span class="algo-arrow">→</span>
+          <span class="algo-step">Conditional MMD</span>
+          <span class="algo-arrow">→</span>
+          <span class="algo-step">Iterative Refinement</span>
+          <span class="algo-arrow">→</span>
+          <span class="algo-step">1-NN Classifier</span>
+        </div>
+        <p style="text-align: center; opacity: 0.8;">JDA iteratively refines pseudo-labels for target domain to improve conditional distribution adaptation</p>
+      </section>
+    </div>
+
+    <!-- RESULTS PAGE -->
+    <div id="results" class="page-section">
+      <section>
+        <h2>Experimental Results - Accuracy Comparison</h2>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">各列格式：Ours (Paper)，即复现结果（论文报告值）。</p>
+
+        <div class="stats-summary" id="statsSummary">
+          <div class="stat-box">
+            <div class="value" id="oursJdaAvg">-</div>
+            <div class="label">Our JDA Avg</div>
+          </div>
+          <div class="stat-box">
+            <div class="value" id="paperJdaAvg">-</div>
+            <div class="label">Paper JDA Avg</div>
+          </div>
+          <div class="stat-box">
+            <div class="value" id="jdaDiff">-</div>
+            <div class="label">Avg Difference</div>
+          </div>
+        </div>
+
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="Digit">Digit</button>
+          <button class="filter-btn" data-filter="COIL">COIL</button>
+          <button class="filter-btn" data-filter="PIE">PIE</button>
+          <button class="filter-btn" data-filter="SURF">SURF/Office</button>
+        </div>
+
+        <div class="table-wrap">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th class="method-col">NN</th>
+                <th class="method-col">PCA</th>
+                <th class="method-col">GFK</th>
+                <th class="method-col">TCA</th>
+                <th class="method-col">TSL</th>
+                <th class="method-col">JDA</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>Figure 3 - Cross-Domain Accuracy Overview</h2>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">四类数据集（Digit、COIL、PIE、SURF/Office）共 36 个跨域图像任务在各方法下的准确率，体现不同迁移难度下的知识适配表现。</p>
+        <div class="figure-grid">
+          <div class="figure-item">
+            <img src="./figures/3result.png" alt="Accuracy on 36 cross-domain tasks" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22%3EFigure 3 (place figures/3result.png)%3C/text%3E%3C/svg%3E';">
+            <p class="figure-caption">Accuracy (%) on 4 types of 36 cross-domain image datasets</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Figure 4 - Effectiveness Verification</h2>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">PIE1→PIE2 任务：Accuracy 与 MMD Distance 随迭代次数变化（数据来自 fig4_results.csv）</p>
+        <div class="figure-grid">
+          <div class="figure-item">
+            <h4 style="margin-bottom: 0.5rem; color: #7bed9f;">(a) Accuracy vs #Iterations</h4>
+            <div class="chart-container" style="height: 280px;">
+              <canvas id="fig4AccChart"></canvas>
+            </div>
+          </div>
+          <div class="figure-item">
+            <h4 style="margin-bottom: 0.5rem; color: #7bed9f;">(b) MMD Distance vs #Iterations</h4>
+            <div class="chart-container" style="height: 280px;">
+              <canvas id="fig4MmdChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="figure-grid" style="margin-top: 1.5rem;">
+          <div class="figure-item">
+            <img src="./figures/4_cd.png" alt="Similarity Matrices" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22%3EFigure 4c-d (place figures/4_cd.png)%3C/text%3E%3C/svg%3E';">
+            <p class="figure-caption">(c) TCA & (d) JDA Similarity Matrices</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Figure 5 - Parameter Sensitivity & Convergence</h2>
+        <div class="figure-grid figure-grid-fig5">
+          <div class="figure-item">
+            <img src="./figures/exp_c_figure5a_k_sensitivity.png" alt="k sensitivity" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22300%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2212%22%3E(a) place figures/exp_c_figure5a_k_sensitivity.png%3C/text%3E%3C/svg%3E';">
+            <p class="figure-caption">(a) k Sensitivity</p>
+          </div>
+          <div class="figure-item">
+            <img src="./figures/exp_c_figure5b_lambda_sensitivity.png" alt="λ sensitivity" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22300%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2212%22%3E(b) place figures/exp_c_figure5b_lambda_sensitivity.png%3C/text%3E%3C/svg%3E';">
+            <p class="figure-caption">(b) λ Sensitivity</p>
+          </div>
+        </div>
+        <div class="figure-grid figure-grid-fig5" style="margin-top: 1.5rem;">
+          <div class="figure-item">
+            <img src="./figures/exp_d_figure5c_accuracy_convergence.png" alt="Accuracy convergence" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22300%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2212%22%3E(c) place figures/exp_d_figure5c_accuracy_convergence.png%3C/text%3E%3C/svg%3E';">
+            <p class="figure-caption">(c) Accuracy Convergence</p>
+          </div>
+          <div class="figure-item">
+            <img src="./figures/exp_d_figure5d_distance_convergence.png" alt="Distance convergence" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23333%22 width=%22300%22 height=%22200%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2212%22%3E(d) place figures/exp_d_figure5d_distance_convergence.png%3C/text%3E%3C/svg%3E';">
+            <p class="figure-caption">(d) Distance Convergence</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- COMPARISON PAGE -->
+    <div id="comparison" class="page-section">
+      <section>
+        <h2>Method Comparison by Dataset Type</h2>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">数据来源：内嵌的 36 个跨域任务结果（论文报告值 Paper + 复现结果 Ours），详见 <code>data.json</code> / <code>_embedded_data.txt</code>。</p>
+        <div class="comparison-grid">
+          <div>
+            <h3>Average Accuracy by Method</h3>
+            <div class="chart-container">
+              <canvas id="methodChart"></canvas>
+            </div>
+          </div>
+          <div>
+            <h3>Performance by Dataset Type</h3>
+            <div class="chart-container">
+              <canvas id="datasetChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>JDA: Ours vs Paper</h2>
+        <p style="margin-bottom: 1rem; opacity: 0.9;">对比复现 JDA 与论文报告的 JDA 准确率，差值 = Ours − Paper。</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Dataset Type</th>
+                <th>JDA (Ours)</th>
+                <th>JDA (Paper)</th>
+                <th>Difference (Ours − Paper)</th>
+              </tr>
+            </thead>
+            <tbody id="improvementBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ABOUT PAGE -->
+    <div id="about" class="page-section">
+      <section>
+        <h2>About This Reproduction</h2>
+        <div class="about-content">
+          <div>
+            <h3>Paper Information</h3>
+            <p><strong>Title:</strong> Transfer Feature Learning with Joint Distribution Adaptation</p>
+            <p><strong>Authors:</strong> Mingsheng Long, Jianmin Wang, Guiguang Ding, Jiaguang Sun, Philip S. Yu</p>
+            <p><strong>Conference:</strong> ICCV 2013</p>
+
+            <h3 style="margin-top: 1.5rem;">Datasets Used</h3>
+            <ul style="opacity: 0.9; line-height: 1.8;">
+              <li><strong>Digit:</strong> USPS, MNIST (2 tasks)</li>
+              <li><strong>COIL:</strong> COIL1, COIL2 (2 tasks)</li>
+              <li><strong>PIE:</strong> PIE1-5 permutations (20 tasks)</li>
+              <li><strong>SURF/Office:</strong> Caltech, Amazon, Webcam, DSLR (12 tasks)</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Reproduction Summary</h3>
+            <table style="font-size: 0.9rem;">
+              <tr><td><strong>Total Tasks</strong></td><td>36</td></tr>
+              <tr><td><strong>Methods</strong></td><td>NN, PCA, GFK, TCA, TSL, JDA</td></tr>
+              <tr><td><strong>Avg JDA (Paper)</strong></td><td id="aboutPaperJda">-</td></tr>
+              <tr><td><strong>Avg JDA (Ours)</strong></td><td id="aboutOursJda">-</td></tr>
+              <tr><td><strong>Avg Difference</strong></td><td id="aboutJdaDiff">-</td></tr>
+            </table>
+
+            <h3 style="margin-top: 1.5rem;">GitHub Repository</h3>
+            <p><a href="https://github.com/caroline1677/COMP7404-Group16-JDA-Reproduction/tree/visualization/jda-results-visualization" target="_blank" style="color: #00d9ff;">COMP7404-Group16-JDA-Reproduction (visualization 分支)</a></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="qr-section">
+        <h2>Scan to Access</h2>
+        <div id="qrcode"></div>
+        <p class="qr-url" id="currentUrl"></p>
+        <button id="downloadQr">Download QR Code</button>
+      </section>
+    </div>
+
+    <footer>
+      <p>JDA: Transfer Feature Learning with Joint Distribution Adaptation (ICCV 2013)</p>
+      <p>COMP7404 Group16 | Quziqi, He Qing, Lu Zhihua, Liu Zhengyang</p>
+    </footer>
+  </div>
+
+  <script>
+    const methods = ['NN', 'PCA', 'GFK', 'TCA', 'TSL', 'JDA'];
+    // fig4_results.csv: Iteration, Method, Accuracy(%), MMD_Distance
+    const fig4Data = [{"it":1,"m":"NN","acc":30.82,"mmd":3.0963},{"it":1,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":1,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":1,"m":"JDA","acc":37.45,"mmd":0.1366},{"it":2,"m":"NN","acc":30.82,"mmd":3.0963},{"it":2,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":2,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":2,"m":"JDA","acc":52.98,"mmd":0.1001},{"it":3,"m":"NN","acc":30.82,"mmd":3.0963},{"it":3,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":3,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":3,"m":"JDA","acc":58.2,"mmd":0.086},{"it":4,"m":"NN","acc":30.82,"mmd":3.0963},{"it":4,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":4,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":4,"m":"JDA","acc":60.28,"mmd":0.0839},{"it":5,"m":"NN","acc":30.82,"mmd":3.0963},{"it":5,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":5,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":5,"m":"JDA","acc":61.2,"mmd":0.082},{"it":6,"m":"NN","acc":30.82,"mmd":3.0963},{"it":6,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":6,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":6,"m":"JDA","acc":61.63,"mmd":0.083},{"it":7,"m":"NN","acc":30.82,"mmd":3.0963},{"it":7,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":7,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":7,"m":"JDA","acc":62,"mmd":0.0825},{"it":8,"m":"NN","acc":30.82,"mmd":3.0963},{"it":8,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":8,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":8,"m":"JDA","acc":62,"mmd":0.0822},{"it":9,"m":"NN","acc":30.82,"mmd":3.0963},{"it":9,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":9,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":9,"m":"JDA","acc":62.49,"mmd":0.0837},{"it":10,"m":"NN","acc":30.82,"mmd":3.0963},{"it":10,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":10,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":10,"m":"JDA","acc":63.04,"mmd":0.0837},{"it":11,"m":"NN","acc":30.82,"mmd":3.0963},{"it":11,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":11,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":11,"m":"JDA","acc":63.9,"mmd":0.0834},{"it":12,"m":"NN","acc":30.82,"mmd":3.0963},{"it":12,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":12,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":12,"m":"JDA","acc":64.21,"mmd":0.0827},{"it":13,"m":"NN","acc":30.82,"mmd":3.0963},{"it":13,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":13,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":13,"m":"JDA","acc":64.83,"mmd":0.082},{"it":14,"m":"NN","acc":30.82,"mmd":3.0963},{"it":14,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":14,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":14,"m":"JDA","acc":64.89,"mmd":0.0812},{"it":15,"m":"NN","acc":30.82,"mmd":3.0963},{"it":15,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":15,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":15,"m":"JDA","acc":64.95,"mmd":0.0809},{"it":16,"m":"NN","acc":30.82,"mmd":3.0963},{"it":16,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":16,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":16,"m":"JDA","acc":65.25,"mmd":0.0804},{"it":17,"m":"NN","acc":30.82,"mmd":3.0963},{"it":17,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":17,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":17,"m":"JDA","acc":65.44,"mmd":0.0801},{"it":18,"m":"NN","acc":30.82,"mmd":3.0963},{"it":18,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":18,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":18,"m":"JDA","acc":65.56,"mmd":0.08},{"it":19,"m":"NN","acc":30.82,"mmd":3.0963},{"it":19,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":19,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":19,"m":"JDA","acc":65.68,"mmd":0.0802},{"it":20,"m":"NN","acc":30.82,"mmd":3.0963},{"it":20,"m":"PCA","acc":24.86,"mmd":2.7362},{"it":20,"m":"TCA","acc":37.57,"mmd":0.1758},{"it":20,"m":"JDA","acc":65.62,"mmd":0.08}];
+
+    const allData = {"Digit": {"USPS → MNIST": {"paper": {"NN": 44.7, "PCA": 44.95, "GFK": 46.45, "TCA": 51.05, "TSL": 53.75, "JDA": 59.65}, "ours": {"NN": 23.3, "PCA": 24.1, "GFK": 23.5, "TCA": 50.5, "TSL": 49.95, "JDA": 50.45}, "runtime": {"NN": null, "PCA": 1.314, "GFK": 0.679, "TCA": 0.831, "TSL": 2.697, "JDA": 19.657}}, "MNIST → USPS": {"paper": {"NN": 65.94, "PCA": 66.22, "GFK": 67.22, "TCA": 56.28, "TSL": 66.06, "JDA": 67.28}, "ours": {"NN": 61.33, "PCA": 60.67, "GFK": 58.89, "TCA": 55.67, "TSL": 56.5, "JDA": 66.73}, "runtime": {"NN": null, "PCA": 1.127, "GFK": 2.849, "TCA": 2.71, "TSL": 3.288, "JDA": 33.619}}}, "COIL": {"COIL1 → COIL2": {"paper": {"NN": 83.61, "PCA": 84.72, "GFK": 72.5, "TCA": 88.47, "TSL": 88.06, "JDA": 89.31}, "ours": {"NN": 83.33, "PCA": 85.42, "GFK": 73.61, "TCA": 87.5, "TSL": 88.61, "JDA": 89.44}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "COIL2 → COIL1": {"paper": {"NN": 82.78, "PCA": 84.03, "GFK": 74.17, "TCA": 85.83, "TSL": 87.92, "JDA": 88.47}, "ours": {"NN": 84.72, "PCA": 85.69, "GFK": 76.11, "TCA": 85.42, "TSL": 85.69, "JDA": 88.06}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}}, "PIE": {"PIE1 → PIE2 (1)": {"paper": {"NN": 26.09, "PCA": 24.8, "GFK": 26.15, "TCA": 40.76, "TSL": 44.08, "JDA": 58.81}, "ours": {"NN": 30.82, "PCA": 24.86, "GFK": 26.03, "TCA": 40.2, "TSL": 31.74, "JDA": 62.49}, "runtime": {"NN": null, "PCA": 0.225, "GFK": 0.219, "TCA": 0.244, "TSL": 11.464, "JDA": 105.094}}, "PIE1 → PIE3 (2)": {"paper": {"NN": 26.59, "PCA": 25.18, "GFK": 27.27, "TCA": 41.79, "TSL": 47.49, "JDA": 54.23}, "ours": {"NN": 33.88, "PCA": 30.45, "GFK": 30.58, "TCA": 42.28, "TSL": 35.91, "JDA": 59.19}, "runtime": {"NN": null, "PCA": 0.232, "GFK": 0.25, "TCA": 0.291, "TSL": 11.211, "JDA": 118.293}}, "PIE1 → PIE4 (3)": {"paper": {"NN": 30.67, "PCA": 29.26, "GFK": 31.15, "TCA": 59.63, "TSL": 62.78, "JDA": 84.5}, "ours": {"NN": 37.73, "PCA": 35.39, "GFK": 35.45, "TCA": 60.89, "TSL": 62.3, "JDA": 86.86}, "runtime": {"NN": null, "PCA": 0.308, "GFK": 0.309, "TCA": 0.518, "TSL": 11.647, "JDA": 124.34}}, "PIE1 → PIE5 (4)": {"paper": {"NN": 16.67, "PCA": 16.3, "GFK": 17.59, "TCA": 29.35, "TSL": 36.15, "JDA": 49.75}, "ours": {"NN": 13.11, "PCA": 13.11, "GFK": 13.73, "TCA": 30.15, "TSL": 24.51, "JDA": 50.01}, "runtime": {"NN": null, "PCA": 0.219, "GFK": 0.31, "TCA": 0.451, "TSL": 11.562, "JDA": 126.648}}, "PIE2 → PIE1 (5)": {"paper": {"NN": 24.49, "PCA": 24.22, "GFK": 25.24, "TCA": 41.81, "TSL": 46.28, "JDA": 57.62}, "ours": {"NN": 26.05, "PCA": 25.33, "GFK": 26.03, "TCA": 44.15, "TSL": 43.61, "JDA": 60.26}, "runtime": {"NN": null, "PCA": 0.263, "GFK": 0.267, "TCA": 0.486, "TSL": 11.544, "JDA": 106.304}}, "PIE2 → PIE3 (6)": {"paper": {"NN": 46.63, "PCA": 45.53, "GFK": 47.37, "TCA": 51.47, "TSL": 57.6, "JDA": 62.93}, "ours": {"NN": 53.86, "PCA": 46.57, "GFK": 48.84, "TCA": 51.29, "TSL": 53.06, "JDA": 64.09}, "runtime": {"NN": null, "PCA": 0.197, "GFK": 0.193, "TCA": 0.21, "TSL": 11.883, "JDA": 117.624}}, "PIE2 → PIE4 (7)": {"paper": {"NN": 54.07, "PCA": 53.35, "GFK": 54.25, "TCA": 64.73, "TSL": 71.43, "JDA": 75.82}, "ours": {"NN": 49.71, "PCA": 49.62, "GFK": 51.97, "TCA": 68.97, "TSL": 66.96, "JDA": 82.85}, "runtime": {"NN": null, "PCA": 0.256, "GFK": 0.431, "TCA": 0.43, "TSL": 11.437, "JDA": 122.661}}, "PIE2 → PIE5 (8)": {"paper": {"NN": 26.53, "PCA": 25.43, "GFK": 27.08, "TCA": 33.7, "TSL": 35.66, "JDA": 39.89}, "ours": {"NN": 31.07, "PCA": 25.86, "GFK": 27.08, "TCA": 33.46, "TSL": 35.66, "JDA": 39.95}, "runtime": {"NN": null, "PCA": 2.262, "GFK": 0.7125, "TCA": 0.15, "TSL": 4.5875, "JDA": 212.95}}, "PIE3 → PIE1 (9)": {"paper": {"NN": 21.37, "PCA": 20.95, "GFK": 21.82, "TCA": 34.69, "TSL": 36.94, "JDA": 50.96}, "ours": {"NN": 22.69, "PCA": 20.62, "GFK": 21.04, "TCA": 34.9, "TSL": 37.0, "JDA": 51.05}, "runtime": {"NN": null, "PCA": 1.807, "GFK": 0.1, "TCA": 0.2, "TSL": 1.9, "JDA": 20.0}}, "PIE3 → PIE2 (10)": {"paper": {"NN": 41.01, "PCA": 40.45, "GFK": 43.16, "TCA": 47.7, "TSL": 47.02, "JDA": 57.95}, "ours": {"NN": 36.96, "PCA": 37.92, "GFK": 39.41, "TCA": 43.59, "TSL": 42.97, "JDA": 59.24}, "runtime": {"NN": null, "PCA": 1.495, "GFK": 0.1, "TCA": 0.3, "TSL": 3.2, "JDA": 76.3}}, "PIE3 → PIE4 (11)": {"paper": {"NN": 46.53, "PCA": 46.14, "GFK": 46.41, "TCA": 56.23, "TSL": 59.45, "JDA": 68.45}, "ours": {"NN": 46.26, "PCA": 46.14, "GFK": 46.29, "TCA": 56.41, "TSL": 59.66, "JDA": 68.85}, "runtime": {"NN": null, "PCA": null, "GFK": 0.1, "TCA": 0.3, "TSL": 5.7, "JDA": 80.8}}, "PIE3 → PIE5 (12)": {"paper": {"NN": 26.23, "PCA": 25.31, "GFK": 26.78, "TCA": 33.15, "TSL": 36.34, "JDA": 39.95}, "ours": {"NN": 20.89, "PCA": 20.34, "GFK": 23.47, "TCA": 30.94, "TSL": 30.58, "JDA": 33.64}, "runtime": {"NN": null, "PCA": null, "GFK": 1.3, "TCA": 2.2, "TSL": 98.6, "JDA": 500.4}}, "PIE4 → PIE1 (13)": {"paper": {"NN": 32.95, "PCA": 31.96, "GFK": 34.24, "TCA": 55.64, "TSL": 63.66, "JDA": 80.58}, "ours": {"NN": 31.9, "PCA": 31.36, "GFK": 33.13, "TCA": 55.67, "TSL": 55.67, "JDA": 80.58}, "runtime": {"NN": null, "PCA": null, "GFK": 1.8, "TCA": 2.425, "TSL": 56.2, "JDA": 1166.725}}, "PIE4 → PIE2 (14)": {"paper": {"NN": 62.68, "PCA": 60.96, "GFK": 62.92, "TCA": 67.83, "TSL": 72.68, "JDA": 82.63}, "ours": {"NN": 69.49, "PCA": 59.12, "GFK": 63.66, "TCA": 63.72, "TSL": 61.94, "JDA": 82.87}, "runtime": {"NN": null, "PCA": null, "GFK": 2.05, "TCA": 1.925, "TSL": 45.475, "JDA": 1105.725}}, "PIE4 → PIE3 (15)": {"paper": {"NN": 73.22, "PCA": 72.18, "GFK": 73.35, "TCA": 75.86, "TSL": 83.52, "JDA": 87.25}, "ours": {"NN": 78.49, "PCA": 71.63, "GFK": 72.61, "TCA": 74.69, "TSL": 72.37, "JDA": 87.01}, "runtime": {"NN": null, "PCA": null, "GFK": 0.5, "TCA": 0.6, "TSL": 4.0, "JDA": 99.8}}, "PIE4 → PIE5 (16)": {"paper": {"NN": 37.19, "PCA": 35.11, "GFK": 37.38, "TCA": 40.26, "TSL": 44.79, "JDA": 54.66}, "ours": {"NN": 38.17, "PCA": 34.8, "GFK": 36.64, "TCA": 39.4, "TSL": 39.52, "JDA": 52.88}, "runtime": {"NN": null, "PCA": null, "GFK": 0.7, "TCA": 0.1, "TSL": 0.9, "JDA": 103.7}}, "PIE5 → PIE1 (17)": {"paper": {"NN": 18.49, "PCA": 18.85, "GFK": 20.35, "TCA": 26.98, "TSL": 33.28, "JDA": 46.46}, "ours": {"NN": 14.2, "PCA": 14.32, "GFK": 15.55, "TCA": 26.98, "TSL": 33.28, "JDA": 46.46}, "runtime": {"NN": null, "PCA": null, "GFK": 0.3, "TCA": 0.2, "TSL": 1.1, "JDA": 47.8}}, "PIE5 → PIE2 (18)": {"paper": {"NN": 24.19, "PCA": 23.39, "GFK": 24.62, "TCA": 29.9, "TSL": 34.13, "JDA": 42.05}, "ours": {"NN": 29.59, "PCA": 23.57, "GFK": 23.51, "TCA": 30.02, "TSL": 32.11, "JDA": 43.59}, "runtime": {"NN": null, "PCA": null, "GFK": 1.0, "TCA": 1.3, "TSL": 106.0, "JDA": 419.1}}, "PIE5 → PIE3 (19)": {"paper": {"NN": 28.31, "PCA": 27.21, "GFK": 28.49, "TCA": 29.9, "TSL": 36.58, "JDA": 53.31}, "ours": {"NN": 32.41, "PCA": 27.45, "GFK": 28.86, "TCA": 29.9, "TSL": 31.99, "JDA": 52.21}, "runtime": {"NN": null, "PCA": null, "GFK": 1.4, "TCA": null, "TSL": 96.3, "JDA": 465.2}}, "PIE5 → PIE4 (20)": {"paper": {"NN": 31.24, "PCA": 30.34, "GFK": 31.33, "TCA": 33.64, "TSL": 38.75, "JDA": 57.01}, "ours": {"NN": 26.73, "PCA": 26.67, "GFK": 29.14, "TCA": 33.79, "TSL": 36.08, "JDA": 56.59}, "runtime": {"NN": null, "PCA": null, "GFK": 1.7, "TCA": 4.3, "TSL": 110.9, "JDA": 581.1}}}, "SURF/Office": {"C → A (1)": {"paper": {"NN": 23.7, "PCA": 36.95, "GFK": 41.02, "TCA": 38.2, "TSL": 44.47, "JDA": 44.78}, "ours": {"NN": 23.7, "PCA": 36.85, "GFK": 40.61, "TCA": 39.14, "TSL": 45.51, "JDA": 43.95}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "C → W (2)": {"paper": {"NN": 25.76, "PCA": 32.54, "GFK": 40.68, "TCA": 38.64, "TSL": 34.24, "JDA": 41.69}, "ours": {"NN": 25.76, "PCA": 31.19, "GFK": 39.32, "TCA": 38.64, "TSL": 35.25, "JDA": 37.63}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "C → D (3)": {"paper": {"NN": 25.48, "PCA": 38.22, "GFK": 38.85, "TCA": 41.4, "TSL": 43.31, "JDA": 45.22}, "ours": {"NN": 25.48, "PCA": 39.49, "GFK": 36.94, "TCA": 41.4, "TSL": 44.59, "JDA": 45.22}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "A → C (4)": {"paper": {"NN": 26.0, "PCA": 34.73, "GFK": 40.25, "TCA": 37.76, "TSL": 37.58, "JDA": 39.36}, "ours": {"NN": 26.0, "PCA": 33.04, "GFK": 40.07, "TCA": 37.85, "TSL": 39.45, "JDA": 39.36}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "A → W (5)": {"paper": {"NN": 29.83, "PCA": 35.59, "GFK": 38.98, "TCA": 37.63, "TSL": 33.9, "JDA": 37.97}, "ours": {"NN": 29.83, "PCA": 35.59, "GFK": 37.63, "TCA": 38.98, "TSL": 35.59, "JDA": 38.98}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "A → D (6)": {"paper": {"NN": 25.48, "PCA": 27.39, "GFK": 36.31, "TCA": 33.12, "TSL": 26.11, "JDA": 39.49}, "ours": {"NN": 25.48, "PCA": 28.03, "GFK": 36.31, "TCA": 33.12, "TSL": 30.57, "JDA": 39.49}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "W → C (7)": {"paper": {"NN": 19.86, "PCA": 26.36, "GFK": 30.72, "TCA": 29.3, "TSL": 29.83, "JDA": 31.17}, "ours": {"NN": 19.86, "PCA": 26.18, "GFK": 29.83, "TCA": 29.39, "TSL": 29.3, "JDA": 31.17}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "W → A (8)": {"paper": {"NN": 22.96, "PCA": 31.0, "GFK": 29.75, "TCA": 30.06, "TSL": 30.27, "JDA": 32.78}, "ours": {"NN": 22.96, "PCA": 30.9, "GFK": 29.85, "TCA": 30.9, "TSL": 30.27, "JDA": 32.78}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "W → D (9)": {"paper": {"NN": 59.24, "PCA": 77.07, "GFK": 80.89, "TCA": 87.26, "TSL": 87.26, "JDA": 89.17}, "ours": {"NN": 59.24, "PCA": 75.16, "GFK": 81.53, "TCA": 87.26, "TSL": 87.26, "JDA": 89.17}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "D → C (10)": {"paper": {"NN": 26.27, "PCA": 29.65, "GFK": 30.28, "TCA": 31.7, "TSL": 28.5, "JDA": 31.52}, "ours": {"NN": 26.27, "PCA": 30.01, "GFK": 29.83, "TCA": 31.88, "TSL": 28.41, "JDA": 31.61}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "D → A (11)": {"paper": {"NN": 28.5, "PCA": 32.05, "GFK": 32.05, "TCA": 32.15, "TSL": 27.56, "JDA": 33.09}, "ours": {"NN": 28.5, "PCA": 30.58, "GFK": 32.36, "TCA": 31.52, "TSL": 29.85, "JDA": 32.67}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}, "D → W (12)": {"paper": {"NN": 63.39, "PCA": 75.93, "GFK": 75.59, "TCA": 86.1, "TSL": 89.49, "JDA": 89.49}, "ours": {"NN": 63.39, "PCA": 67.46, "GFK": 74.92, "TCA": 85.76, "TSL": 89.49, "JDA": 89.49}, "runtime": {"NN": null, "PCA": null, "GFK": null, "TCA": null, "TSL": null, "JDA": null}}}};
+    initApp();
+
+    function initApp() {
+      // Compute and show JDA averages
+      let jdaOursSum = 0, jdaPaperSum = 0, n = 0;
+      Object.values(allData).forEach(ds => {
+        Object.values(ds).forEach(t => {
+          if (t.ours?.JDA != null) { jdaOursSum += t.ours.JDA; n++; }
+          if (t.paper?.JDA != null) jdaPaperSum += t.paper.JDA;
+        });
+      });
+      const oursAvg = (n > 0 ? jdaOursSum / n : 0).toFixed(2);
+      const paperAvg = (n > 0 ? jdaPaperSum / n : 0).toFixed(2);
+      const diff = (parseFloat(oursAvg) - parseFloat(paperAvg)).toFixed(2);
+      const diffStr = (parseFloat(diff) >= 0 ? '+' : '') + diff + '%';
+      ['oursJdaAvg','paperJdaAvg','jdaDiff','heroJdaDiff'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = [oursAvg + '%', paperAvg + '%', diffStr, diffStr][i];
+      });
+      ['aboutOursJda','aboutPaperJda','aboutJdaDiff'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = [oursAvg + '%', paperAvg + '%', diffStr][i];
+      });
+
+      // Setup navigation
+      setupNavigation();
+
+      // Render hero chart
+      renderHeroChart();
+
+      // Render results table
+      renderResultsTable(allData);
+
+      // Render Figure 4 charts (from fig4_results.csv)
+      renderFig4Charts();
+
+      // Render comparison charts
+      renderMethodChart();
+      renderDatasetChart();
+      renderImprovementTable();
+
+      // QR code
+      renderQR();
+    }
+
+    // Navigation
+    function setupNavigation() {
+      document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const page = link.dataset.page;
+
+          // Update nav
+          document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+
+          // Update page
+          document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+          document.getElementById(page).classList.add('active');
+        });
+      });
+
+      // Filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const filter = btn.dataset.filter;
+          filterResults(filter);
+        });
+      });
+    }
+
+    function filterResults(filter) {
+      let filtered = {};
+      if (filter === 'all') {
+        filtered = allData;
+      } else {
+        const map = { 'Digit': 'Digit', 'COIL': 'COIL', 'PIE': 'PIE', 'SURF': 'SURF/Office' };
+        filtered[map[filter]] = allData[map[filter]] || {};
+      }
+      renderResultsTable(filtered);
+    }
+
+    // Hero Chart
+    function renderHeroChart() {
+      const ctx = document.getElementById('heroChart').getContext('2d');
+
+      const totals = {};
+      const counts = {};
+      methods.forEach(m => { totals[m] = 0; counts[m] = 0; });
+
+      Object.values(allData).forEach(ds => {
+        Object.values(ds).forEach(task => {
+          methods.forEach(m => {
+            if (task.ours[m] != null) {
+              totals[m] += task.ours[m];
+              counts[m]++;
+            }
+          });
+        });
+      });
+
+      const avgData = methods.map(m => (counts[m] > 0 ? (totals[m] / counts[m]).toFixed(2) : '0'));
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: methods,
+          datasets: [{
+            label: 'Our Average Accuracy (%)',
+            data: avgData,
+            backgroundColor: ['rgba(255,179,71,0.8)', 'rgba(255,107,107,0.8)', 'rgba(156,136,255,0.8)', 'rgba(0,206,201,0.8)', 'rgba(253,121,168,0.8)', 'rgba(123,237,159,0.8)'],
+            borderColor: ['#ffb347', '#ff6b6b', '#9c88ff', '#00cec9', '#fd79a8', '#7bed9f'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 70, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } },
+            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8', font: { size: 14 } } }
+          }
+        }
+      });
+    }
+
+    // Results Table: one row per task, 列顺序严格对应 methods = NN, PCA, GFK, TCA, TSL, JDA
+    function renderResultsTable(data) {
+      const tbody = document.getElementById('resultsBody');
+      let html = '';
+
+      Object.entries(data).forEach(([dsName, tasks]) => {
+        Object.entries(tasks).forEach(([task, vals]) => {
+          const ours = vals.ours;
+          const paper = vals.paper;
+          const jdaOurs = ours['JDA'];
+          let maxAcc = -1;
+          methods.forEach(m => { if (ours[m] != null && ours[m] > maxAcc) maxAcc = ours[m]; });
+
+          const cells = methods.map(m => {
+            const p = paper[m];
+            const o = ours[m];
+            const isBest = o != null && Math.abs(o - maxAcc) < 0.01;
+            const txt = (o != null ? o.toFixed(1) : '-') + (p != null ? ' <span class="paper-val">(' + p.toFixed(1) + ')</span>' : '');
+            return `<td class="method-col ${isBest ? 'best' : ''}">${txt}</td>`;
+          });
+
+          html += `<tr>
+            <td class="task-name">${task}</td>
+            <td>${dsName}</td>
+            ${cells.join('')}
+          </tr>`;
+        });
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // Figure 4: Accuracy & MMD vs Iterations (from fig4Data)
+    function renderFig4Charts() {
+      const iters = [...new Set(fig4Data.map(r => r.it))].sort((a,b)=>a-b);
+      const fig4Methods = ['NN','PCA','TCA','JDA'];
+      const colors = { NN: 'rgba(255,179,71,0.9)', PCA: 'rgba(255,107,107,0.9)', TCA: 'rgba(0,206,201,0.9)', JDA: 'rgba(123,237,159,0.9)' };
+
+      const accDatasets = fig4Methods.map(m => ({
+        label: m,
+        data: iters.map(i => (fig4Data.find(r => r.it === i && r.m === m) || {}).acc),
+        borderColor: colors[m].replace('0.9','1'),
+        backgroundColor: colors[m],
+        fill: false,
+        tension: 0.2
+      }));
+      const mmdDatasets = fig4Methods.map(m => ({
+        label: m,
+        data: iters.map(i => (fig4Data.find(r => r.it === i && r.m === m) || {}).mmd),
+        borderColor: colors[m].replace('0.9','1'),
+        backgroundColor: colors[m],
+        fill: false,
+        tension: 0.2
+      }));
+
+      const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e8e8e8' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } }, x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } } } };
+      new Chart(document.getElementById('fig4AccChart').getContext('2d'), { type: 'line', data: { labels: iters, datasets: accDatasets }, options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true, max: 70 } } } });
+      new Chart(document.getElementById('fig4MmdChart').getContext('2d'), { type: 'line', data: { labels: iters, datasets: mmdDatasets }, options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true } } } });
+    }
+
+    // Method Comparison Chart
+    function renderMethodChart() {
+      const ctx = document.getElementById('methodChart').getContext('2d');
+
+      const avgByMethod = {};
+      methods.forEach(m => avgByMethod[m] = { sum: 0, count: 0 });
+
+      Object.values(allData).forEach(ds => {
+        Object.values(ds).forEach(task => {
+          methods.forEach(m => {
+            if (task.ours[m] != null) {
+              avgByMethod[m].sum += task.ours[m];
+              avgByMethod[m].count++;
+            }
+          });
+        });
+      });
+
+      const data = methods.map(m => (avgByMethod[m].count > 0 ? (avgByMethod[m].sum / avgByMethod[m].count).toFixed(2) : '0'));
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: methods,
+          datasets: [{
+            label: 'Our Accuracy (%)',
+            data: data,
+            backgroundColor: 'rgba(0,217,255,0.7)',
+            borderColor: '#00d9ff',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 70, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } },
+            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } }
+          }
+        }
+      });
+    }
+
+    // Dataset Type Chart
+    function renderDatasetChart() {
+      const ctx = document.getElementById('datasetChart').getContext('2d');
+
+      const datasetTypes = ['Digit', 'COIL', 'PIE', 'SURF/Office'];
+      const datasets = ['Digit', 'COIL', 'PIE', 'SURF/Office'];
+      const chartColors = ['rgba(255,179,71,0.7)', 'rgba(255,107,107,0.7)', 'rgba(156,136,255,0.7)', 'rgba(0,206,201,0.7)', 'rgba(253,121,168,0.7)', 'rgba(123,237,159,0.7)'];
+
+      const datasetData = datasets.map(dsName => {
+        const tasks = allData[dsName] || {};
+        const methodAvgs = {};
+        methods.forEach(m => methodAvgs[m] = { sum: 0, count: 0 });
+
+        Object.values(tasks).forEach(task => {
+          methods.forEach(m => {
+            if (task.ours[m] != null) {
+              methodAvgs[m].sum += task.ours[m];
+              methodAvgs[m].count++;
+            }
+          });
+        });
+
+        return methods.map(m => (methodAvgs[m].count > 0 ? (methodAvgs[m].sum / methodAvgs[m].count).toFixed(2) : '0'));
+      });
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: datasetTypes,
+          datasets: methods.map((m, i) => ({
+            label: m,
+            data: datasetData.map(d => parseFloat(d[i])),
+            backgroundColor: chartColors[i],
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { color: '#e8e8e8' } } },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } },
+            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#e8e8e8' } }
+          }
+        }
+      });
+    }
+
+    // Improvement Table: JDA (Ours) vs JDA (Paper)
+    function renderImprovementTable() {
+      const tbody = document.getElementById('improvementBody');
+      const datasets = ['Digit', 'COIL', 'PIE', 'SURF/Office'];
+      const labels = ['Digit (2)', 'COIL (2)', 'PIE (20)', 'SURF/Office (12)'];
+      let html = '';
+
+      datasets.forEach((dsName, i) => {
+        const tasks = allData[dsName] || {};
+        let jdaOursSum = 0, jdaOursCount = 0;
+        let jdaPaperSum = 0, jdaPaperCount = 0;
+
+        Object.values(tasks).forEach(task => {
+          if (task.ours['JDA'] != null) { jdaOursSum += task.ours['JDA']; jdaOursCount++; }
+          if (task.paper['JDA'] != null) { jdaPaperSum += task.paper['JDA']; jdaPaperCount++; }
+        });
+
+        const jdaOurs = jdaOursCount > 0 ? jdaOursSum / jdaOursCount : 0;
+        const jdaPaper = jdaPaperCount > 0 ? jdaPaperSum / jdaPaperCount : 0;
+        const diff = (jdaOurs - jdaPaper).toFixed(2);
+        const diffClass = parseFloat(diff) >= 0 ? 'positive' : 'negative';
+
+        html += `<tr>
+          <td>${labels[i]}</td>
+          <td class="ours"><strong>${jdaOurs.toFixed(2)}%</strong></td>
+          <td>${jdaPaper.toFixed(2)}%</td>
+          <td class="diff ${diffClass}">${parseFloat(diff) >= 0 ? '+' : ''}${diff}%</td>
+        </tr>`;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // QR Code
+    let qrDataUrl = '';
+    function renderQR() {
+      const url = window.location.href;
+      document.getElementById('currentUrl').textContent = url;
+      const qrEl = document.getElementById('qrcode');
+      qrEl.innerHTML = '';
+      QRCode.toDataURL(url, { width: 180, margin: 2 }, (err, dataUrl) => {
+        if (!err) {
+          qrDataUrl = dataUrl;
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          img.alt = 'QR Code';
+          qrEl.appendChild(img);
+        }
+      });
+      document.getElementById('downloadQr').onclick = () => {
+        if (qrDataUrl) {
+          const a = document.createElement('a');
+          a.href = qrDataUrl;
+          a.download = 'jda-results-qrcode.png';
+          a.click();
+        }
+      };
+    }
+  </script>
+</body>
+</html>
